@@ -1,0 +1,5 @@
+{
+  "name": "CViguera. Système d'enregistrement des chauffeurs",
+  "description": "Una aplicación para registrar la entrada de choferes mediante el escaneo de códigos de barras. Mantiene un registro de las entradas y gestiona una lista de choferes autorizados.",
+  "requestFramePermissions": []
+}
