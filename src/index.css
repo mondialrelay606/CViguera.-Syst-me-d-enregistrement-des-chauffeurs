@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+    background-color: #1f2937; /* gray-800 */
+    background-image: linear-gradient(to bottom right, #111827, #374151);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+}
+
+.text-shadow { text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+.text-shadow-lg { text-shadow: 0 4px 8px rgba(0,0,0,0.6); }
