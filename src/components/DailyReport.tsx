@@ -31,7 +31,6 @@ const DailyReport: React.FC<DailyReportProps> = ({ records, returnRecords }) => 
     const [selectedDate, setSelectedDate] = useState(formatDateForInput(new Date()));
 
     const reportData: DailyReportRow[] = useMemo(() => {
-        // Crea las fechas en la zona horaria local del usuario para evitar errores de "off-by-one-day".
         const startOfDay = new Date(`${selectedDate}T00:00:00`);
         const endOfDay = new Date(`${selectedDate}T23:59:59.999`);
         
@@ -59,16 +58,16 @@ const DailyReport: React.FC<DailyReportProps> = ({ records, returnRecords }) => 
 
     return (
         <div className="h-full flex flex-col">
-            <h2 className="text-xl font-bold text-gray-700 mb-4">{t('adminPanel.dailyReport.title')}</h2>
+            <h2 className="text-xl font-bold text-slate-700 mb-4">{t('adminPanel.dailyReport.title')}</h2>
             
-            <div className="flex justify-between items-center mb-6 p-4 border rounded-lg bg-gray-50/80">
+            <div className="flex justify-between items-center mb-6 p-4 border border-slate-200/60 rounded-lg bg-slate-50/70">
                 <div className="flex items-center space-x-2">
-                    <label htmlFor="reportDate" className="block text-sm font-medium text-gray-700">{t('adminPanel.dailyReport.dateLabel')}</label>
-                    <input type="date" id="reportDate" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="block rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2" />
+                    <label htmlFor="reportDate" className="block text-sm font-medium text-slate-700">{t('adminPanel.dailyReport.dateLabel')}</label>
+                    <input type="date" id="reportDate" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="block rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2" />
                 </div>
                 <button
                     onClick={() => exportDailyReportToCSV(reportData, t)}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 flex items-center transition-colors disabled:opacity-50"
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 flex items-center transition-colors disabled:opacity-50 text-sm font-medium"
                     disabled={reportData.length === 0}
                 >
                     <ExportIcon />
@@ -76,37 +75,37 @@ const DailyReport: React.FC<DailyReportProps> = ({ records, returnRecords }) => 
                 </button>
             </div>
 
-            <div className="flex-grow overflow-y-auto">
+            <div className="flex-grow overflow-y-auto border border-slate-200/60 rounded-lg">
                 {reportData.length === 0 ? (
-                    <div className="flex items-center justify-center h-full text-gray-500">
+                    <div className="flex items-center justify-center h-full text-slate-500">
                         <p>{t('adminPanel.dailyReport.noData')}</p>
                     </div>
                 ) : (
                     <div className="relative overflow-x-auto">
-                        <table className="w-full text-sm text-start text-gray-500">
-                            <thead className="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0">
+                        <table className="w-full text-sm text-start text-slate-600">
+                            <thead className="text-xs text-slate-700 uppercase bg-slate-100 table-fixed-header">
                                 <tr>
-                                    <th scope="col" className="px-6 py-3">{t('export.headers.driverName')}</th>
-                                    <th scope="col" className="px-6 py-3">{t('export.headers.checkoutTime')}</th>
-                                    <th scope="col" className="px-6 py-3">{t('export.headers.recordedAt')}</th>
-                                    <th scope="col" className="px-6 py-3">{t('export.headers.closedRelais')}</th>
-                                    <th scope="col" className="px-6 py-3 text-center">{t('export.headers.unidentifiedPackages')}</th>
-                                    <th scope="col" className="px-6 py-3 text-center">{t('export.headers.undeliveredPackages')}</th>
-                                    <th scope="col" className="px-6 py-3">{t('export.headers.saturatedLockers')}</th>
-                                    <th scope="col" className="px-6 py-3">{t('export.headers.notes')}</th>
+                                    <th scope="col" className="px-6 py-3 font-semibold">{t('export.headers.driverName')}</th>
+                                    <th scope="col" className="px-6 py-3 font-semibold">{t('export.headers.checkoutTime')}</th>
+                                    <th scope="col" className="px-6 py-3 font-semibold">{t('export.headers.recordedAt')}</th>
+                                    <th scope="col" className="px-6 py-3 font-semibold">{t('export.headers.closedRelais')}</th>
+                                    <th scope="col" className="px-6 py-3 font-semibold text-center">{t('export.headers.unidentifiedPackages')}</th>
+                                    <th scope="col" className="px-6 py-3 font-semibold text-center">{t('export.headers.undeliveredPackages')}</th>
+                                    <th scope="col" className="px-6 py-3 font-semibold">{t('export.headers.saturatedLockers')}</th>
+                                    <th scope="col" className="px-6 py-3 font-semibold">{t('export.headers.notes')}</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                {reportData.map(row => (
-                                    <tr key={row.attendanceRecordId} className="bg-white/70 border-b border-gray-200/50 hover:bg-gray-50/70">
-                                        <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">{row.driverName} <span className="text-gray-500 text-xs">({row.driverSubcontractor})</span></td>
+                            <tbody className="bg-white">
+                                {reportData.map((row, index) => (
+                                    <tr key={row.attendanceRecordId} className={`border-b border-slate-200/60 ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/70'}`}>
+                                        <td className="px-6 py-4 font-medium text-slate-900 whitespace-nowrap">{row.driverName} <span className="text-slate-500 text-xs">({row.driverSubcontractor})</span></td>
                                         <td className="px-6 py-4">{row.checkoutTime ? row.checkoutTime.toLocaleTimeString('es-ES') : '-'}</td>
                                         <td className="px-6 py-4">{row.recordedAt.toLocaleTimeString('es-ES')}</td>
                                         <td className="px-6 py-4 font-mono text-xs">{row.closedRelays || '-'}</td>
                                         <td className="px-6 py-4 text-center font-semibold">{row.unidentifiedPackages}</td>
                                         <td className="px-6 py-4 text-center font-semibold">{row.undeliveredPackages}</td>
                                         <td className="px-6 py-4 font-mono text-xs">{row.saturatedLockers || '-'}</td>
-                                        <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate" title={row.notes}>{row.notes || '-'}</td>
+                                        <td className="px-6 py-4 text-sm text-slate-600 max-w-xs truncate" title={row.notes}>{row.notes || '-'}</td>
                                     </tr>
                                 ))}
                             </tbody>

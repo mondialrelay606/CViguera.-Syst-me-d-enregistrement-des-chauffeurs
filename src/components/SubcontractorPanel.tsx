@@ -28,14 +28,16 @@ const SubcontractorPanel: React.FC<SubcontractorPanelProps> = ({ subcontractor, 
     const TabButton: React.FC<{ tab: Tab, label: string }> = ({ tab, label }) => (
         <button
             onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === tab ? 'bg-blue-600 text-white shadow' : 'text-gray-600 hover:bg-gray-200'}`}
+            className={`px-3 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${
+                activeTab === tab 
+                ? 'bg-white text-blue-600 shadow-sm' 
+                : 'text-gray-500 hover:bg-gray-200/50 hover:text-gray-700'
+            }`}
         >
             {label}
         </button>
     );
     
-    // El componente DriverList espera una función onUpdateDriverRoute, pero las subcontratas no pueden editar.
-    // Pasamos una función vacía para satisfacer la prop ya que la edición estará deshabilitada.
     const handleUpdateRouteDummy = () => {};
 
 
@@ -53,33 +55,33 @@ const SubcontractorPanel: React.FC<SubcontractorPanelProps> = ({ subcontractor, 
     };
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8 h-screen flex flex-col bg-gray-100">
-            <header className="mb-6 pb-4 border-b border-gray-200">
-                <div className="flex justify-between items-center">
+        <div className="p-4 sm:p-6 lg:p-8 h-screen flex flex-col bg-slate-100">
+            <header className="mb-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                      <div>
-                        <h1 className="text-2xl font-bold text-gray-800">{t('subcontractorPanel.title')}</h1>
-                        <p className="text-gray-600">{t('subcontractorPanel.welcome', { company: subcontractor.companyName })}</p>
+                        <h1 className="text-3xl font-bold text-slate-800">{t('subcontractorPanel.title')}</h1>
+                        <p className="text-slate-600">{t('subcontractorPanel.welcome', { company: subcontractor.companyName })}</p>
                     </div>
                     <div className="flex items-center space-x-4">
                         <LanguageSwitcher />
                         <button
                             onClick={onLogout}
-                            className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center"
+                            className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center text-sm font-medium"
                         >
                             <LogoutIcon />
                             {t('driverDashboard.logoutButton')}
                         </button>
                     </div>
                 </div>
-                 <div className="flex justify-start items-center mt-4">
-                    <div className="flex flex-wrap space-x-1 border border-gray-200 rounded-lg p-1 bg-gray-50">
+                 <div className="flex justify-start items-center mt-6">
+                    <div className="flex flex-wrap gap-1 border border-gray-200 rounded-lg p-1 bg-slate-200/60">
                         <TabButton tab="log" label={t('subcontractorPanel.tabs.log')} />
                         <TabButton tab="reports" label={t('subcontractorPanel.tabs.reports')} />
                         <TabButton tab="drivers" label={t('subcontractorPanel.tabs.drivers')} />
                     </div>
                 </div>
             </header>
-            <main className="flex-grow bg-white p-6 rounded-lg shadow-inner overflow-hidden">
+            <main className="flex-grow bg-white p-6 rounded-lg border border-slate-200/80 shadow-sm overflow-hidden">
                 {renderContent()}
             </main>
         </div>

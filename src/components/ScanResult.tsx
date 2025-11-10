@@ -29,7 +29,7 @@ const ScanResult: React.FC<ScanResultProps> = ({ result }) => {
   const { t } = useTranslation();
   if (result.status === ScanStatus.IDLE) {
     return (
-        <div className="h-28 flex items-center justify-center text-gray-500 italic">
+        <div className="h-28 flex items-center justify-center text-slate-500 italic">
             {t('scanResult.waiting')}
         </div>
     );
@@ -54,7 +54,7 @@ const ScanResult: React.FC<ScanResultProps> = ({ result }) => {
   }
 
   return (
-    <div className={`mt-4 p-4 rounded-lg border ${bgColor} ${borderColor} flex items-center space-x-4 rtl:space-x-reverse transition-all duration-300`}>
+    <div className={`mt-4 p-4 rounded-xl border ${bgColor} ${borderColor} flex items-center space-x-4 rtl:space-x-reverse transition-all duration-300 shadow-md`}>
       <div>
         <Icon />
       </div>

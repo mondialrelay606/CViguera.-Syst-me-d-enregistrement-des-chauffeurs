@@ -320,14 +320,14 @@ const App: React.FC = () => {
 
 
   if (isLoading) {
-    return <div className="min-h-screen flex justify-center items-center bg-gray-100"><p>{t('general.loading')}</p></div>;
+    return <div className="min-h-screen flex justify-center items-center bg-slate-100"><p>{t('general.loading')}</p></div>;
   }
 
   const renderView = () => {
     switch(view) {
       case 'login':
         return (
-          <div className="min-h-screen flex flex-col justify-center items-center p-4">
+          <div className="min-h-screen flex flex-col justify-center items-center p-4 login-background">
             <div className="absolute top-8 text-center text-white">
               <Clock />
             </div>
@@ -351,7 +351,7 @@ const App: React.FC = () => {
         );
       case 'adminPanel':
         return (
-          <div className="bg-gray-100 min-h-screen">
+          <div className="min-h-screen bg-slate-100">
              <AdminPanel 
                drivers={drivers} 
                records={attendanceRecords} 
@@ -374,12 +374,14 @@ const App: React.FC = () => {
             return null;
         }
         return (
-            <SubcontractorPanel
-                subcontractor={activeSubcontractor}
-                drivers={subcontractorDrivers}
-                records={subcontractorRecords}
-                onLogout={handleLogout}
-            />
+           <div className="min-h-screen bg-slate-100">
+                <SubcontractorPanel
+                    subcontractor={activeSubcontractor}
+                    drivers={subcontractorDrivers}
+                    records={subcontractorRecords}
+                    onLogout={handleLogout}
+                />
+           </div>
         );
       case 'driverDashboard':
         if (!activeDriver) {
@@ -387,7 +389,7 @@ const App: React.FC = () => {
             return null;
         }
         return (
-            <div className="min-h-screen">
+            <div className="min-h-screen login-background">
                 <DriverDashboard 
                     driver={activeDriver} 
                     records={attendanceRecords}

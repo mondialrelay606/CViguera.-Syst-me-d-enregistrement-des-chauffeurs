@@ -22,7 +22,7 @@ const BarcodeIcon = () => (
 const CompanyLogo = () => {
     const { t } = useTranslation();
     return (
-        <img src="/logo.png" alt={t('login.companyLogoAlt')} className="w-24 h-24 mx-auto" />
+        <img src="/logo.png" alt={t('login.companyLogoAlt')} className="w-24 h-24 mx-auto mb-4" />
     );
 };
 
@@ -61,7 +61,6 @@ const Login: React.FC<LoginProps> = ({ onIdentifyDriver, onAdminAccess, onProfil
         setError(null);
         if (!id.trim()) return;
         
-        // Special code for admin access
         if (id.trim().toUpperCase() === 'ADMIN') {
             onAdminAccess();
             setId('');
@@ -125,7 +124,7 @@ const Login: React.FC<LoginProps> = ({ onIdentifyDriver, onAdminAccess, onProfil
                         value={id}
                         onChange={(e) => setId(e.target.value)}
                         placeholder={t('general.waitingForCode')}
-                        className="w-full ps-12 pe-4 py-3 text-lg border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full ps-12 pe-4 py-3 text-lg bg-white/50 border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400 focus:bg-white/75 transition"
                         autoFocus
                     />
                 </div>
@@ -137,27 +136,29 @@ const Login: React.FC<LoginProps> = ({ onIdentifyDriver, onAdminAccess, onProfil
         if (!identifiedDriver) return null;
         
         const actionButtonText = isCheckedIn ? t('login.registerExitButton') : t('login.registerEntryButton');
-        const actionButtonClass = isCheckedIn ? 'bg-red-600 hover:bg-red-700 focus:ring-red-500' : 'bg-green-600 hover:bg-green-700 focus:ring-green-500';
+        const actionButtonClass = isCheckedIn 
+            ? 'from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 focus:ring-red-500' 
+            : 'from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 focus:ring-green-500';
         const actionHandler = isCheckedIn ? handleCheckOutClick : handleCheckInClick;
 
         return (
              <div className="space-y-4 text-center">
-                 <p className="text-gray-600">{t('login.driverIdentified', { name: identifiedDriver.name })}</p>
-                <div className="flex flex-col space-y-3">
+                 <p className="text-gray-800 text-lg">{t('login.driverIdentified', { name: identifiedDriver.name })}</p>
+                <div className="flex flex-col space-y-3 pt-2">
                     <button 
                         onClick={() => onProfileAccess(identifiedDriver)}
-                        className="w-full py-3 px-4 rounded-md shadow-sm text-sm font-medium text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                        className="w-full py-3 px-4 rounded-lg shadow-sm font-semibold text-white bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all transform hover:scale-105"
                     >
                        {t('login.profileButton')}
                     </button>
                     <button 
                         onClick={actionHandler}
-                        className={`w-full py-3 px-4 rounded-md shadow-sm text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 ${actionButtonClass}`}
+                        className={`w-full py-3 px-4 rounded-lg shadow-sm font-semibold text-white bg-gradient-to-r focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all transform hover:scale-105 ${actionButtonClass}`}
                     >
                         {actionButtonText}
                     </button>
                 </div>
-                 <button onClick={handleCancel} className="text-sm text-blue-600 hover:underline">
+                 <button onClick={handleCancel} className="text-sm text-blue-600 hover:underline pt-2">
                     {t('login.scanAnother')}
                  </button>
             </div>
@@ -183,7 +184,7 @@ const Login: React.FC<LoginProps> = ({ onIdentifyDriver, onAdminAccess, onProfil
                             type="text"
                             value={plate}
                             onChange={(e) => setPlate(e.target.value.toUpperCase())}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-lg font-mono text-center"
+                            className="w-full px-3 py-2 bg-white/50 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg font-mono text-center"
                             required
                             placeholder={t('login.platePlaceholder')}
                             autoFocus
@@ -191,7 +192,7 @@ const Login: React.FC<LoginProps> = ({ onIdentifyDriver, onAdminAccess, onProfil
                     </div>
                      <button 
                         type="submit" 
-                        className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                        className="w-full py-2 px-4 border border-transparent rounded-lg shadow-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-all transform hover:scale-105"
                         disabled={!plate.trim()}
                     >
                         {t('login.confirmButton')}
@@ -215,25 +216,25 @@ const Login: React.FC<LoginProps> = ({ onIdentifyDriver, onAdminAccess, onProfil
     }
 
     return (
-        <div className="flex flex-col justify-center items-center p-4">
+        <div className="flex flex-col justify-center items-center p-4 w-full">
              <div className="absolute top-4 right-4">
                 <LanguageSwitcher />
             </div>
-            <div className="max-w-md w-full bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-8 space-y-6">
+            <div className="max-w-md w-full bg-white/20 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl p-8 space-y-6">
                 <div className="text-center">
                     <CompanyLogo />
-                    <h1 className="text-3xl font-bold text-gray-800 mt-4">{t('login.welcome')}</h1>
-                    <p className="text-gray-500">{t('login.title')}</p>
+                    <h1 className="text-3xl font-bold text-gray-800">{t('login.welcome')}</h1>
+                    <p className="text-gray-600">{t('login.title')}</p>
                 </div>
                 
-                {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">{error}</div>}
+                {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative" role="alert">{error}</div>}
 
                 {renderContent()}
 
-                 <div className="text-center pt-4 border-t border-gray-200">
+                 <div className="text-center pt-4 border-t border-white/20">
                     <button
                         onClick={onSubcontractorAccessRequest}
-                        className="text-sm font-medium text-gray-600 hover:text-blue-600"
+                        className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors"
                     >
                         {t('login.subcontractor.access')}
                     </button>
@@ -243,14 +244,14 @@ const Login: React.FC<LoginProps> = ({ onIdentifyDriver, onAdminAccess, onProfil
             <div className="mt-6 text-center">
                 <button
                     onClick={onAdminAccess}
-                    className="text-sm font-medium text-gray-200 hover:text-white text-shadow"
+                    className="text-sm font-medium text-gray-300 hover:text-white text-shadow transition-colors"
                 >
                     {t('login.adminAccess')}
                 </button>
             </div>
 
             <footer className="absolute bottom-4 text-center w-full">
-                <p className="text-xs text-white/60 text-shadow">
+                <p className="text-xs text-white/50 text-shadow">
                     Desarrollado por cviguera
                 </p>
             </footer>

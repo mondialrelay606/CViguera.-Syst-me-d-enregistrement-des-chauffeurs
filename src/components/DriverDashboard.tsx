@@ -28,35 +28,34 @@ const DriverDashboard: React.FC<DriverDashboardProps> = ({ driver, records, onUp
         onUpdatePlate(driver.id, vehiclePlate);
         setIsEditing(false);
         setUpdateMessage(t('driverDashboard.plateUpdateSuccess'));
-        setTimeout(() => setUpdateMessage(''), 3000); // El mensaje desaparece después de 3 segundos
+        setTimeout(() => setUpdateMessage(''), 3000);
     };
 
     return (
         <div className="min-h-screen p-4 sm:p-6 lg:p-8">
             <div className="max-w-4xl mx-auto">
-                <header className="flex justify-between items-start mb-6 bg-black/20 backdrop-blur-sm p-4 rounded-lg">
+                <header className="flex flex-col sm:flex-row justify-between items-start mb-8 gap-4">
                     <div className="flex-1">
                         <h1 className="text-3xl font-bold text-white text-shadow-lg">{t('driverDashboard.welcome', { name: driver.name })}</h1>
-                        <p className="text-lg text-gray-200 text-shadow">{driver.company}</p>
+                        <p className="text-lg text-gray-300 text-shadow">{driver.company}</p>
                     </div>
-                    <div className="flex flex-col items-end space-y-4">
+                    <div className="flex items-center space-x-4">
+                        <LanguageSwitcher />
                         <button
                             onClick={onLogout}
-                            className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 flex items-center transition-colors"
+                            className="bg-red-600/80 text-white px-4 py-2 rounded-lg hover:bg-red-700/90 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-70 flex items-center transition-colors backdrop-blur-sm border border-white/20"
                         >
                             <LogoutIcon />
                             {t('driverDashboard.logoutButton')}
                         </button>
-                        <LanguageSwitcher />
                     </div>
                 </header>
 
-                <main className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {/* Sección de Vehículo */}
-                    <div className="bg-white/90 backdrop-blur-sm p-6 rounded-lg shadow-xl">
-                        <h2 className="text-xl font-bold text-gray-700 mb-4">{t('driverDashboard.myVehicleTitle')}</h2>
+                <main className="space-y-8">
+                    <div className="bg-white/10 backdrop-blur-xl p-6 rounded-xl shadow-lg border border-white/20">
+                        <h2 className="text-xl font-bold text-white text-shadow mb-4">{t('driverDashboard.myVehicleTitle')}</h2>
                         <div className="space-y-3">
-                            <label htmlFor="vehicle-plate" className="block text-sm font-medium text-gray-700">
+                            <label htmlFor="vehicle-plate" className="block text-sm font-medium text-gray-200 text-shadow">
                                 {t('driverDashboard.plateLabel')}
                             </label>
                              <div className="flex items-center space-x-2 rtl:space-x-reverse">
@@ -65,51 +64,50 @@ const DriverDashboard: React.FC<DriverDashboardProps> = ({ driver, records, onUp
                                     type="text"
                                     value={vehiclePlate}
                                     onChange={(e) => { setVehiclePlate(e.target.value.toUpperCase()); setIsEditing(true); }}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                    className="w-full px-3 py-2 bg-white/20 text-white border border-white/30 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 placeholder:text-gray-300"
                                     placeholder={t('driverDashboard.platePlaceholder')}
                                 />
                                 {isEditing && (
                                     <button
                                         onClick={handleUpdateClick}
-                                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 whitespace-nowrap"
+                                        className="bg-blue-600/80 text-white px-4 py-2 rounded-lg hover:bg-blue-700/90 whitespace-nowrap backdrop-blur-sm border border-white/20"
                                     >
                                         {t('general.update')}
                                     </button>
                                 )}
                             </div>
-                            {updateMessage && <p className="text-sm text-green-600 mt-2">{updateMessage}</p>}
+                            {updateMessage && <p className="text-sm text-green-300 mt-2">{updateMessage}</p>}
                         </div>
                     </div>
 
-                    {/* Historial de Fichajes */}
-                    <div className="bg-white/90 backdrop-blur-sm p-6 rounded-lg shadow-xl md:col-span-2">
-                        <h2 className="text-xl font-bold text-gray-700 mb-4">{t('driverDashboard.historyTitle')}</h2>
-                        <div className="max-h-96 overflow-y-auto">
+                    <div className="bg-white/10 backdrop-blur-xl p-6 rounded-xl shadow-lg border border-white/20">
+                        <h2 className="text-xl font-bold text-white text-shadow mb-4">{t('driverDashboard.historyTitle')}</h2>
+                        <div className="max-h-96 overflow-y-auto border border-white/20 rounded-lg">
                              {driverRecords.length === 0 ? (
-                                <div className="flex items-center justify-center h-full text-gray-500 py-10">
+                                <div className="flex items-center justify-center h-full text-gray-300 py-10">
                                     <p>{t('driverDashboard.noRecords')}</p>
                                 </div>
                             ) : (
-                                <table className="w-full text-sm text-start text-gray-500">
-                                    <thead className="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0">
+                                <table className="w-full text-sm text-start text-gray-200">
+                                    <thead className="text-xs text-white/80 uppercase bg-white/10 table-fixed-header">
                                         <tr>
-                                            <th scope="col" className="px-6 py-3">{t('driverDashboard.headers.date')}</th>
-                                            <th scope="col" className="px-6 py-3">{t('driverDashboard.headers.plate')}</th>
-                                            <th scope="col" className="px-6 py-3">{t('driverDashboard.headers.checkin')}</th>
-                                            <th scope="col" className="px-6 py-3">{t('driverDashboard.headers.checkout')}</th>
+                                            <th scope="col" className="px-6 py-3 font-semibold">{t('driverDashboard.headers.date')}</th>
+                                            <th scope="col" className="px-6 py-3 font-semibold">{t('driverDashboard.headers.plate')}</th>
+                                            <th scope="col" className="px-6 py-3 font-semibold">{t('driverDashboard.headers.checkin')}</th>
+                                            <th scope="col" className="px-6 py-3 font-semibold">{t('driverDashboard.headers.checkout')}</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
+                                    <tbody className="bg-black/10">
                                         {driverRecords.map((record, index) => (
-                                            <tr key={index} className="bg-white/70 border-b border-gray-200/50 hover:bg-gray-50/70">
-                                                <td className="px-6 py-4 font-medium text-gray-900">
+                                            <tr key={index} className={`border-b border-white/10 ${index % 2 === 0 ? 'bg-black/10' : 'bg-black/20'}`}>
+                                                <td className="px-6 py-4 font-medium text-white">
                                                     {record.checkinTime.toLocaleDateString('es-ES')}
                                                 </td>
                                                 <td className="px-6 py-4 font-mono text-xs">{record.vehiclePlate || '---'}</td>
-                                                <td className="px-6 py-4 text-green-600 font-semibold">
+                                                <td className="px-6 py-4 text-green-400 font-semibold">
                                                     {record.checkinTime.toLocaleTimeString('es-ES')}
                                                 </td>
-                                                <td className="px-6 py-4 text-red-600 font-semibold">
+                                                <td className="px-6 py-4 text-red-400 font-semibold">
                                                     {record.checkoutTime ? record.checkoutTime.toLocaleTimeString('es-ES') : '---'}
                                                 </td>
                                             </tr>

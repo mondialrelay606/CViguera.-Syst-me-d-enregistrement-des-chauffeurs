@@ -62,7 +62,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ drivers, records, returnRecords
     const TabButton: React.FC<{ tab: Tab, label: string }> = ({ tab, label }) => (
         <button
             onClick={() => setActiveTab(tab)}
-            className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === tab ? 'bg-blue-600 text-white shadow' : 'text-gray-600 hover:bg-gray-200'}`}
+            className={`px-3 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${
+                activeTab === tab 
+                ? 'bg-white text-blue-600 shadow-sm' 
+                : 'text-gray-500 hover:bg-gray-200/50 hover:text-gray-700'
+            }`}
         >
             {label}
         </button>
@@ -91,32 +95,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ drivers, records, returnRecords
 
     return (
         <div className="p-4 sm:p-6 lg:p-8 h-screen flex flex-col">
-            <header className="mb-6 pb-4 border-b border-gray-200">
-                <div className="flex justify-between items-center">
-                    <h1 className="text-2xl font-bold text-gray-800">{t('adminPanel.title')}</h1>
-                    <div className="flex items-center space-x-4">
+            <header className="mb-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <h1 className="text-3xl font-bold text-slate-800">{t('adminPanel.title')}</h1>
+                    <div className="flex items-center space-x-2 sm:space-x-4">
                         <LanguageSwitcher />
-                        <button
-                            onClick={onLogout}
-                            className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center"
-                        >
-                            <LogoutIcon />
-                            {t('adminPanel.logoutButton')}
-                        </button>
-                    </div>
-                </div>
-                 <div className="flex justify-between items-center mt-4">
-                    <div className="flex flex-wrap gap-1 border border-gray-200 rounded-lg p-1 bg-gray-100">
-                        <TabButton tab="departChauffeur" label={t('adminPanel.tabs.departChauffeur')} />
-                        <TabButton tab="retourTournee" label={t('adminPanel.tabs.retourTournee')} />
-                        <TabButton tab="dailyReport" label={t('adminPanel.tabs.dailyReport')} />
-                        <TabButton tab="log" label={t('adminPanel.tabs.log')} />
-                        <TabButton tab="reports" label={t('adminPanel.tabs.reports')} />
-                        <TabButton tab="drivers" label={t('adminPanel.tabs.drivers')} />
-                        <TabButton tab="subcontractors" label={t('adminPanel.tabs.subcontractors')} />
-                    </div>
-                    <div>
-                        <input
+                         <input
                             type="file"
                             ref={fileInputRef}
                             onChange={handleFileChange}
@@ -125,16 +109,34 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ drivers, records, returnRecords
                         />
                         <button
                             onClick={handleImportClick}
-                            className="bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-800 flex items-center"
+                            className="bg-white text-slate-600 px-4 py-2 rounded-lg hover:bg-slate-50 hover:text-slate-800 border border-slate-300 flex items-center transition-colors text-sm font-medium"
                         >
                            <ImportIcon />
                            {t('adminPanel.importFromCsv')}
                         </button>
-                         <p className="text-xs text-gray-500 mt-1 text-end">{t('adminPanel.csvFormatInfo')}</p>
+                        <button
+                            onClick={onLogout}
+                            className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center transition-colors text-sm font-medium"
+                        >
+                            <LogoutIcon />
+                            {t('adminPanel.logoutButton')}
+                        </button>
+                    </div>
+                </div>
+                <div className="mt-6">
+                     <p className="text-xs text-gray-500 text-end mb-1">{t('adminPanel.csvFormatInfo')}</p>
+                    <div className="flex flex-wrap gap-1 border border-gray-200 rounded-lg p-1 bg-slate-200/60">
+                        <TabButton tab="departChauffeur" label={t('adminPanel.tabs.departChauffeur')} />
+                        <TabButton tab="retourTournee" label={t('adminPanel.tabs.retourTournee')} />
+                        <TabButton tab="dailyReport" label={t('adminPanel.tabs.dailyReport')} />
+                        <TabButton tab="log" label={t('adminPanel.tabs.log')} />
+                        <TabButton tab="reports" label={t('adminPanel.tabs.reports')} />
+                        <TabButton tab="drivers" label={t('adminPanel.tabs.drivers')} />
+                        <TabButton tab="subcontractors" label={t('adminPanel.tabs.subcontractors')} />
                     </div>
                 </div>
             </header>
-            <main className="flex-grow bg-white/80 p-6 rounded-lg shadow-inner overflow-hidden">
+            <main className="flex-grow bg-white p-6 rounded-lg border border-slate-200/80 shadow-sm overflow-hidden">
                 {renderContent()}
             </main>
         </div>
