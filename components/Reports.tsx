@@ -43,18 +43,18 @@ const Reports: React.FC<ReportsProps> = ({ drivers, records }) => {
     const [selectedDriverId, setSelectedDriverId] = useState('all');
 
     const reportData: ReportRow[] = useMemo(() => {
-        const start = new Date(startDate);
-        start.setHours(0, 0, 0, 0);
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
+        // Crea las fechas en la zona horaria local del usuario para evitar errores de "off-by-one-day".
+        const start = new Date(`${startDate}T00:00:00`);
+        const end = new Date(`${endDate}T23:59:59.999`);
 
         return records
-            .filter(rec => rec.checkoutTime) // Only include completed records
+            .filter(rec => rec.checkoutTime) // Solo registros completados
             .filter(rec => {
-                const checkin = rec.checkinTime.getTime();
-                return checkin >= start.getTime() && checkin <= end.getTime();
+                const checkin = rec.checkinTime;
+                return checkin >= start && checkin <= end;
             })
             .filter(rec => selectedDriverId === 'all' || rec.driver.id === selectedDriverId)
+            .sort((a, b) => b.checkinTime.getTime() - a.checkinTime.getTime()) // Ordenar por fecha (objeto Date) antes de mapear
             .map(rec => ({
                 driverName: rec.driver.name,
                 driverCompany: rec.driver.company,
@@ -65,7 +65,7 @@ const Reports: React.FC<ReportsProps> = ({ drivers, records }) => {
                 vehiclePlate: rec.vehiclePlate || t('general.notAvailable'),
                 route: rec.driver.route || t('general.notAvailable'),
                 uniformVerified: rec.uniformVerified ? t('general.yes') : t('general.no'),
-            })).sort((a,b) => new Date(b.checkinTime).getTime() - new Date(a.checkinTime).getTime());
+            }));
     }, [records, startDate, endDate, selectedDriverId, language, t]);
 
     return (
