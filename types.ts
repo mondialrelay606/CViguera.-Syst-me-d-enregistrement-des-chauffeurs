@@ -15,6 +15,7 @@ export interface AttendanceRecord {
   vehiclePlate?: string; // Matrícula usada para este fichaje
   departureNotes?: string; // Notas/instrucciones dadas al inicio del turno
   returnInfoCompleted: boolean;
+  uniformVerified: boolean; // Añadido para verificar el uniforme
 }
 
 export interface ReturnInfo {
@@ -48,6 +49,7 @@ export interface ReportRow {
     duration: string;
     vehiclePlate: string;
     route: string;
+    uniformVerified: string; // Añadido para el reporte
 }
 
 export interface DailyReportRow extends ReturnInfo {

@@ -119,6 +119,7 @@ const App: React.FC = () => {
       checkoutTime: null,
       vehiclePlate: plate,
       returnInfoCompleted: false,
+      uniformVerified: false,
     };
     setAttendanceRecords(prev => [newRecord, ...prev]);
     notificationService.sendNotification(`Check-in: ${driver.name} con matrícula ${plate}.`);
@@ -273,6 +274,22 @@ const App: React.FC = () => {
     resetScanResult();
   }, [t, resetScanResult]);
 
+  const handleVerifyUniform = useCallback((attendanceRecordId: string) => {
+    let driverName = '';
+    setAttendanceRecords(prev => prev.map(rec => {
+        if (rec.id === attendanceRecordId) {
+            driverName = rec.driver.name;
+            return { ...rec, uniformVerified: true };
+        }
+        return rec;
+    }));
+    setScanResult({
+        status: ScanStatus.SUCCESS,
+        message: t('adminPanel.departChauffeur.verifySuccess', { name: driverName })
+    });
+    resetScanResult();
+  }, [t, resetScanResult]);
+
   const handleAddSubcontractorUser = useCallback((user: SubcontractorUser) => {
       if (subcontractorUsers.some(u => u.username.toLowerCase() === user.username.toLowerCase())) {
           setScanResult({ status: ScanStatus.ERROR, message: t('adminPanel.subcontractors.errorUserExists') });
@@ -345,6 +362,7 @@ const App: React.FC = () => {
                onUpdateDriverRoute={handleUpdateDriverRoute}
                onSaveReturnInfo={handleSaveReturnInfo}
                onSaveDepartureNotes={handleSaveDepartureNotes}
+               onVerifyUniform={handleVerifyUniform}
                onAddSubcontractorUser={handleAddSubcontractorUser}
                onUpdateSubcontractorPassword={handleUpdateSubcontractorPassword}
               />

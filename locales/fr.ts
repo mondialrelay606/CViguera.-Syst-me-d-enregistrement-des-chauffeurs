@@ -10,6 +10,8 @@ export default {
         save: 'Enregistrer',
         cancel: 'Annuler',
         notes: 'Notes',
+        yes: 'Oui',
+        no: 'Non',
     },
     login: {
         welcome: 'Bienvenue',
@@ -93,6 +95,7 @@ export default {
             checkin: 'Début journée',
             checkout: 'Retour tournée',
             hours: 'Durée',
+            uniformVerified: 'Uniforme Vérif.',
         },
     },
     driverList: {
@@ -134,6 +137,11 @@ export default {
             notesLabel: 'Informations / Consignes pour le chauffeur',
             notesPlaceholder: 'Saisissez ici toute instruction ou note pertinente...',
             saveSuccess: 'Notes de départ enregistrées avec succès !',
+            uniformStatus: 'Uniforme',
+            verifyButton: 'Vérifier Uniforme',
+            verified: 'Vérifié',
+            notVerified: 'En attente',
+            verifySuccess: 'Uniforme vérifié pour {{name}} !',
         },
         retourTournee: {
             title: 'Enregistrements de Retour en Attente',
@@ -197,6 +205,7 @@ export default {
             checkin: 'Début Journée',
             checkout: 'Retour Tournée',
             hoursWorked: 'Heures Travaillées',
+            uniformVerified: 'Uniforme Vérifié',
             // Daily Report Headers
             recordedAt: 'Heure d\'Enregistrement',
             closedRelais: 'Relais Fermés',

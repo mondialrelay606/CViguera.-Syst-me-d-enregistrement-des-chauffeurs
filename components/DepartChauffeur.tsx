@@ -5,9 +5,10 @@ import { useTranslation } from '../contexts/LanguageContext';
 interface DepartChauffeurProps {
   records: AttendanceRecord[];
   onSave: (attendanceRecordId: string, notes: string) => void;
+  onVerifyUniform: (attendanceRecordId: string) => void;
 }
 
-const DepartChauffeur: React.FC<DepartChauffeurProps> = ({ records, onSave }) => {
+const DepartChauffeur: React.FC<DepartChauffeurProps> = ({ records, onSave, onVerifyUniform }) => {
     const { t } = useTranslation();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedRecord, setSelectedRecord] = useState<AttendanceRecord | null>(null);
@@ -51,7 +52,7 @@ const DepartChauffeur: React.FC<DepartChauffeurProps> = ({ records, onSave }) =>
                 ) : (
                     <ul className="space-y-3">
                         {activeDriversRecords.map(record => (
-                            <li key={record.id} className="bg-white/80 p-4 rounded-lg shadow-sm border border-gray-200 flex justify-between items-center">
+                            <li key={record.id} className="bg-white/80 p-4 rounded-lg shadow-sm border border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                                 <div>
                                     <p className="font-semibold text-gray-800 flex items-center">{record.driver.name} {record.driver.route && <span className="ms-2 bg-gray-200 text-gray-700 text-xs font-medium px-2.5 py-0.5 rounded-full">{record.driver.route}</span>}</p>
                                     <p className="text-sm text-gray-500">
@@ -63,12 +64,34 @@ const DepartChauffeur: React.FC<DepartChauffeurProps> = ({ records, onSave }) =>
                                         </p>
                                     )}
                                 </div>
-                                <button 
-                                    onClick={() => handleOpenModal(record)}
-                                    className="bg-blue-600 text-white px-3 py-1.5 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium"
-                                >
-                                    {record.departureNotes ? t('general.edit') : t('adminPanel.departChauffeur.addButton')}
-                                </button>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <div className="flex items-center gap-2 p-2 rounded-md bg-gray-100">
+                                        <span className="text-sm font-medium text-gray-600">{t('adminPanel.departChauffeur.uniformStatus')}:</span>
+                                        {record.uniformVerified ? (
+                                            <span className="text-green-700 bg-green-100 text-xs font-bold px-2 py-1 rounded-full">
+                                                {t('adminPanel.departChauffeur.verified')}
+                                            </span>
+                                        ) : (
+                                             <span className="text-red-700 bg-red-100 text-xs font-bold px-2 py-1 rounded-full">
+                                                {t('adminPanel.departChauffeur.notVerified')}
+                                            </span>
+                                        )}
+                                        {!record.uniformVerified && (
+                                            <button 
+                                                onClick={() => onVerifyUniform(record.id)}
+                                                className="bg-green-500 text-white px-3 py-1 rounded-md hover:bg-green-600 text-xs font-medium"
+                                            >
+                                                {t('adminPanel.departChauffeur.verifyButton')}
+                                            </button>
+                                        )}
+                                    </div>
+                                    <button 
+                                        onClick={() => handleOpenModal(record)}
+                                        className="bg-blue-600 text-white px-3 py-1.5 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium"
+                                    >
+                                        {record.departureNotes ? t('general.edit') : t('adminPanel.departChauffeur.addButton')}
+                                    </button>
+                                </div>
                             </li>
                         ))}
                     </ul>
