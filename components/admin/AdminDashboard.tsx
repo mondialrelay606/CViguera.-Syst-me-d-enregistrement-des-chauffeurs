@@ -12,6 +12,8 @@ interface AdminDashboardProps {
   allDrivers: Driver[];
   onLogout: () => void;
   onUpdateDrivers: (newDrivers: Driver[]) => void;
+  onUpdateSingleDriver: (driver: Driver) => void;
+  onDeleteDriver: (driverId: string) => void;
 }
 
 const LogoutIcon = () => (
@@ -20,7 +22,7 @@ const LogoutIcon = () => (
     </svg>
 );
 
-const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers, onLogout, onUpdateDrivers }) => {
+const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers, onLogout, onUpdateDrivers, onUpdateSingleDriver, onDeleteDriver }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'stats' | 'drivers'>('stats');
 
@@ -178,7 +180,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers,
                 />
             </div>
             <div className="h-[600px]">
-                <DriverList drivers={allDrivers} />
+                <DriverList 
+                  drivers={allDrivers} 
+                  onUpdateDriver={onUpdateSingleDriver}
+                  onDeleteDriver={onDeleteDriver}
+                />
             </div>
         </div>
       </main>

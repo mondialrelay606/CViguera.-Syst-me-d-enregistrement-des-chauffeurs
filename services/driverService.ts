@@ -1,7 +1,6 @@
 import { Driver } from '../types';
 
 // --- ATENCIÓN: DATOS DE EJEMPLO INICIALES ---
-// La lista de choferes ahora se gestionará dinámicamente.
 const DRIVER_LIST_STORAGE_KEY = 'driverList';
 
 const initialMockDrivers: Driver[] = [
@@ -31,30 +30,69 @@ const loadDriversFromStorage = (): Driver[] => {
 
 let drivers: Driver[] = loadDriversFromStorage();
 
+const saveDriversToStorage = (driversToSave: Driver[]): void => {
+    try {
+        localStorage.setItem(DRIVER_LIST_STORAGE_KEY, JSON.stringify(driversToSave));
+        drivers = driversToSave;
+    } catch (error) {
+        console.error("Error al guardar la lista de choferes:", error);
+        throw error;
+    }
+};
+
+
 export const driverService = {
   /**
    * Obtiene la lista actual de choferes.
    */
   fetchDrivers: (): Promise<Driver[]> => {
-    console.log('Obteniendo lista de choferes...');
     drivers = loadDriversFromStorage();
     return Promise.resolve(drivers);
   },
 
   /**
-   * Actualiza la lista de choferes y la guarda en el almacenamiento local.
-   * @param newDrivers La nueva lista de choferes.
+   * Reemplaza toda la lista de choferes y la guarda en el almacenamiento local.
+   * @param newDrivers La nueva lista completa de choferes.
    */
   updateDrivers: (newDrivers: Driver[]): Promise<void> => {
-    console.log('Actualizando lista de choferes...');
     try {
-        localStorage.setItem(DRIVER_LIST_STORAGE_KEY, JSON.stringify(newDrivers));
-        drivers = newDrivers;
-        console.log('Lista de choferes actualizada y guardada.');
+        saveDriversToStorage(newDrivers);
         return Promise.resolve();
     } catch (error) {
-        console.error("Error al guardar la nueva lista de choferes:", error);
         return Promise.reject(error);
     }
+  },
+
+  /**
+   * Actualiza los datos de un único chofer.
+   * @param updatedDriver El objeto chofer con la información actualizada.
+   */
+  updateSingleDriver: (updatedDriver: Driver): Promise<void> => {
+      try {
+          const driverIndex = drivers.findIndex(d => d.id === updatedDriver.id);
+          if (driverIndex === -1) {
+              return Promise.reject(new Error("No se encontró el chofer para actualizar."));
+          }
+          const newDrivers = [...drivers];
+          newDrivers[driverIndex] = updatedDriver;
+          saveDriversToStorage(newDrivers);
+          return Promise.resolve();
+      } catch (error) {
+          return Promise.reject(error);
+      }
+  },
+
+  /**
+   * Elimina un chofer de la lista.
+   * @param driverId El ID del chofer a eliminar.
+   */
+  deleteDriver: (driverId: string): Promise<void> => {
+      try {
+          const newDrivers = drivers.filter(d => d.id !== driverId);
+          saveDriversToStorage(newDrivers);
+          return Promise.resolve();
+      } catch (error) {
+          return Promise.reject(error);
+      }
   }
 };

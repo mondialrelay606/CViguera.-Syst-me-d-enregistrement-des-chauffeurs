@@ -116,8 +116,42 @@ const App: React.FC = () => {
         }
     };
 
+    const handleUpdateSingleDriver = async (updatedDriver: Driver) => {
+        try {
+            await driverService.updateSingleDriver(updatedDriver);
+            setAllDrivers(prevDrivers => 
+                prevDrivers.map(d => d.id === updatedDriver.id ? updatedDriver : d)
+            );
+            // No mostramos alerta aquí para una experiencia más fluida. El cambio visual es suficiente.
+        } catch (error) {
+            alert('Error al actualizar el chofer.');
+            console.error(error);
+        }
+    };
+
+    const handleDeleteDriver = async (driverId: string) => {
+        if (!window.confirm(`¿Está seguro de que desea eliminar al chofer con ID ${driverId}? Esta acción no se puede deshacer.`)) {
+            return;
+        }
+        try {
+            await driverService.deleteDriver(driverId);
+            setAllDrivers(prevDrivers => prevDrivers.filter(d => d.id !== driverId));
+            alert('Chofer eliminado correctamente.');
+        } catch (error) {
+            alert('Error al eliminar el chofer.');
+            console.error(error);
+        }
+    };
+
     if (isAdminView) {
-        return <AdminDashboard allRecords={checkinLog} allDrivers={allDrivers} onLogout={handleLogout} onUpdateDrivers={handleUpdateDrivers} />;
+        return <AdminDashboard 
+            allRecords={checkinLog} 
+            allDrivers={allDrivers} 
+            onLogout={handleLogout} 
+            onUpdateDrivers={handleUpdateDrivers}
+            onUpdateSingleDriver={handleUpdateSingleDriver}
+            onDeleteDriver={handleDeleteDriver}
+        />;
     }
 
     return (
