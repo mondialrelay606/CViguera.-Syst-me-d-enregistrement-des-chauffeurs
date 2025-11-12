@@ -4,28 +4,18 @@ export interface Driver {
   company: string;
 }
 
-export interface AttendanceRecord {
+export interface CheckinRecord {
   driver: Driver;
-  checkinTime: Date;
-  checkoutTime: Date | null;
+  timestamp: Date;
 }
 
 export enum ScanStatus {
   SUCCESS = 'SUCCESS',
   ERROR = 'ERROR',
-  INFO = 'INFO',
   IDLE = 'IDLE',
 }
 
 export interface ScanResult {
   status: ScanStatus;
   message: string;
-}
-
-export interface ReportRow {
-    driverName: string;
-    driverCompany: string;
-    checkinTime: string;
-    checkoutTime: string;
-    duration: string;
 }

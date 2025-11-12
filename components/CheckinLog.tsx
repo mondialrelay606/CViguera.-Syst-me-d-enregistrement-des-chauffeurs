@@ -1,10 +1,10 @@
 import React from 'react';
-import { AttendanceRecord } from '../types';
-import { exportActivityLogToCSV } from '../utils/csvExporter';
+import { CheckinRecord } from '../types';
+import { exportCheckinsToCSV } from '../utils/csvExporter';
 
 
 interface CheckinLogProps {
-  records: AttendanceRecord[];
+  records: CheckinRecord[];
 }
 
 const ExportIcon = () => (
@@ -18,9 +18,9 @@ const CheckinLog: React.FC<CheckinLogProps> = ({ records }) => {
   return (
     <div className="bg-white p-6 rounded-lg shadow-md h-full flex flex-col">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold text-gray-700">Actividad de Hoy ({records.length})</h2>
+        <h2 className="text-xl font-bold text-gray-700">Fichajes de Hoy ({records.length})</h2>
         <button
-          onClick={() => exportActivityLogToCSV(records)}
+          onClick={() => exportCheckinsToCSV(records)}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 flex items-center transition-colors"
           disabled={records.length === 0}
         >
@@ -38,31 +38,19 @@ const CheckinLog: React.FC<CheckinLogProps> = ({ records }) => {
             <table className="w-full text-sm text-left text-gray-500">
               <thead className="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0">
                 <tr>
+                  <th scope="col" className="px-6 py-3">Hora</th>
                   <th scope="col" className="px-6 py-3">Nombre</th>
                   <th scope="col" className="px-6 py-3">Empresa</th>
-                  <th scope="col" className="px-6 py-3">Hora Entrada</th>
-                  <th scope="col" className="px-6 py-3">Hora Salida</th>
                 </tr>
               </thead>
               <tbody>
                 {records.map((record, index) => (
                   <tr key={index} className="bg-white border-b hover:bg-gray-50">
                     <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
-                      {record.driver.name}
+                      {record.timestamp.toLocaleTimeString('es-ES')}
                     </td>
+                    <td className="px-6 py-4">{record.driver.name}</td>
                     <td className="px-6 py-4">{record.driver.company}</td>
-                    <td className="px-6 py-4">
-                      {record.checkinTime.toLocaleTimeString('es-ES')}
-                    </td>
-                    <td className="px-6 py-4">
-                      {record.checkoutTime ? (
-                        record.checkoutTime.toLocaleTimeString('es-ES')
-                      ) : (
-                        <span className="px-2 py-1 font-semibold leading-tight text-green-700 bg-green-100 rounded-full">
-                          DENTRO
-                        </span>
-                      )}
-                    </td>
                   </tr>
                 ))}
               </tbody>

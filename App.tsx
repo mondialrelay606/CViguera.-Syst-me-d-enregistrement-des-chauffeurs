@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Driver, AttendanceRecord, ScanStatus, type ScanResult as ScanResultType } from './types';
+// FIX: Aliased the `ScanResult` type to `ScanResultType` to resolve the name collision with the `ScanResult` component.
+import { Driver, CheckinRecord, ScanStatus, type ScanResult as ScanResultType } from './types';
 import { driverService } from './services/driverService';
-import { notificationService } from './services/notificationService';
 import Clock from './components/Clock';
 import ScanResult from './components/ScanResult';
 import CheckinLog from './components/CheckinLog';
 import DriverList from './components/DriverList';
-import Reports from './components/Reports';
 
 const BarcodeIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8 text-gray-400">
@@ -17,12 +16,12 @@ const BarcodeIcon = () => (
 
 const App: React.FC = () => {
     const [allDrivers, setAllDrivers] = useState<Driver[]>([]);
-    const [attendanceLog, setAttendanceLog] = useState<AttendanceRecord[]>([]);
-    const [activeDriverIds, setActiveDriverIds] = useState<Set<string>>(new Set());
+    const [checkinLog, setCheckinLog] = useState<CheckinRecord[]>([]);
     const [barcode, setBarcode] = useState('');
+    // FIX: Used the `ScanResultType` alias for the state's type annotation.
     const [lastScanResult, setLastScanResult] = useState<ScanResultType>({ status: ScanStatus.IDLE, message: '' });
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'log' | 'drivers' | 'reports'>('log');
+    const [activeTab, setActiveTab] = useState<'log' | 'drivers'>('log');
     
     const barcodeInputRef = useRef<HTMLInputElement>(null);
 
@@ -39,74 +38,34 @@ const App: React.FC = () => {
             }
         };
         loadDrivers();
+        // Focus the input on mount
         barcodeInputRef.current?.focus();
     }, []);
 
     const handleScan = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        const trimmedBarcode = barcode.trim();
-        if (!trimmedBarcode) return;
+        if (!barcode.trim()) return;
 
-        const foundDriver = allDrivers.find(driver => driver.id === trimmedBarcode);
+        const foundDriver = allDrivers.find(driver => driver.id === barcode.trim());
 
-        if (!foundDriver) {
-            setLastScanResult({ status: ScanStatus.ERROR, message: `Código de barras "${trimmedBarcode}" no encontrado.` });
-            setBarcode('');
-            return;
-        }
-
-        const now = new Date();
-        const isDriverActive = activeDriverIds.has(foundDriver.id);
-
-        if (isDriverActive) {
-            // Es una salida
-            setAttendanceLog(prevLog =>
-                prevLog.map(record =>
-                    record.driver.id === foundDriver.id && record.checkoutTime === null
-                        ? { ...record, checkoutTime: now }
-                        : record
-                )
-            );
-            setActiveDriverIds(prevIds => {
-                const newIds = new Set(prevIds);
-                newIds.delete(foundDriver.id);
-                return newIds;
-            });
-            const message = `Salida registrada para ${foundDriver.name}. ¡Hasta luego!`;
-            setLastScanResult({ status: ScanStatus.INFO, message });
-            notificationService.sendNotification(`SALIDA: ${foundDriver.name} (${foundDriver.company}) a las ${now.toLocaleTimeString()}`);
-        } else {
-            // Es una entrada
-            const newRecord: AttendanceRecord = {
+        if (foundDriver) {
+            const newRecord: CheckinRecord = {
                 driver: foundDriver,
-                checkinTime: now,
-                checkoutTime: null,
+                timestamp: new Date()
             };
-            setAttendanceLog(prevLog => [newRecord, ...prevLog]);
-            setActiveDriverIds(prevIds => new Set(prevIds).add(foundDriver.id));
-            const message = `Entrada registrada para ${foundDriver.name}. ¡Bienvenido!`;
-            setLastScanResult({ status: ScanStatus.SUCCESS, message });
-            notificationService.sendNotification(`ENTRADA: ${foundDriver.name} (${foundDriver.company}) a las ${now.toLocaleTimeString()}`);
+            setCheckinLog(prevLog => [newRecord, ...prevLog]);
+            setLastScanResult({ status: ScanStatus.SUCCESS, message: `Bienvenido, ${foundDriver.name} de ${foundDriver.company}.` });
+        } else {
+            setLastScanResult({ status: ScanStatus.ERROR, message: `Código de barras "${barcode}" no encontrado. Verifique al chofer.` });
         }
-
         setBarcode('');
-        barcodeInputRef.current?.focus();
     };
-    
-    // Filtra los registros para mostrar solo los de hoy en la pestaña de actividad
-    const todaysRecords = attendanceLog.filter(record => {
-        const today = new Date();
-        const recordDate = record.checkinTime;
-        return recordDate.getDate() === today.getDate() &&
-               recordDate.getMonth() === today.getMonth() &&
-               recordDate.getFullYear() === today.getFullYear();
-    });
 
     return (
         <div className="min-h-screen p-4 sm:p-6 lg:p-8 flex flex-col">
             <header className="mb-6 text-center">
                 <h1 className="text-4xl font-bold text-gray-800">Sistema de Fichaje de Choferes</h1>
-                <p className="text-lg text-gray-600">Registro de entradas y salidas por código de barras</p>
+                <p className="text-lg text-gray-600">Registro de entradas por código de barras</p>
             </header>
             <main className="flex-grow grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Columna Izquierda: Escaneo y Reloj */}
@@ -145,13 +104,7 @@ const App: React.FC = () => {
                                 onClick={() => setActiveTab('log')}
                                 className={`${activeTab === 'log' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
                             >
-                                Actividad de Hoy
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('reports')}
-                                className={`${activeTab === 'reports' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
-                            >
-                                Reportes
+                                Fichajes de Hoy
                             </button>
                             <button
                                 onClick={() => setActiveTab('drivers')}
@@ -169,13 +122,10 @@ const App: React.FC = () => {
                         ) : (
                             <>
                                 <div className={activeTab === 'log' ? 'block h-full' : 'hidden'}>
-                                    <CheckinLog records={todaysRecords} />
+                                    <CheckinLog records={checkinLog} />
                                 </div>
                                 <div className={activeTab === 'drivers' ? 'block h-full' : 'hidden'}>
                                     <DriverList drivers={allDrivers} />
-                                </div>
-                                 <div className={activeTab === 'reports' ? 'block h-full' : 'hidden'}>
-                                    <Reports drivers={allDrivers} records={attendanceLog} />
                                 </div>
                             </>
                         )}
