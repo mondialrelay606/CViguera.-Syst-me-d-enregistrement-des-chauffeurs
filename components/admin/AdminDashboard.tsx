@@ -35,6 +35,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers,
     return allRecords.filter(record =>
       record.driver.name.toLowerCase().includes(lowercasedFilter) ||
       record.driver.company.toLowerCase().includes(lowercasedFilter) ||
+      record.driver.tour.toLowerCase().includes(lowercasedFilter) ||
       record.timestamp.toLocaleString('es-ES').includes(lowercasedFilter) ||
       record.type.toLowerCase().includes(lowercasedFilter)
     );
@@ -122,7 +123,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers,
                 <div className="mb-4">
                     <input
                         type="text"
-                        placeholder="Buscar por nombre, empresa, tipo, fecha..."
+                        placeholder="Buscar por nombre, empresa, tournée, tipo, fecha..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
@@ -135,6 +136,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers,
                                 <th scope="col" className="px-6 py-3">Fecha y Hora</th>
                                 <th scope="col" className="px-6 py-3">Nombre</th>
                                 <th scope="col" className="px-6 py-3">Empresa</th>
+                                <th scope="col" className="px-6 py-3">Tournée</th>
                                 <th scope="col" className="px-6 py-3">Tipo</th>
                             </tr>
                         </thead>
@@ -146,6 +148,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers,
                                 </td>
                                 <td className="px-6 py-4">{record.driver.name}</td>
                                 <td className="px-6 py-4">{record.driver.company}</td>
+                                <td className="px-6 py-4">{record.driver.tour}</td>
                                 <td className="px-6 py-4">
                                   <span className={`px-2 py-1 text-xs font-semibold rounded-full ${ record.type === 'Départ Chauffeur' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800' }`}>
                                         {record.type}

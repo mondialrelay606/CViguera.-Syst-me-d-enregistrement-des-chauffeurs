@@ -6,11 +6,12 @@ export const exportCheckinsToCSV = (records: CheckinRecord[], filename: string =
     return;
   }
 
-  const headers = ['Hora de Entrada', 'Nombre del Chofer', 'Empresa', 'Código de Barras', 'Tipo de Movimiento'];
+  const headers = ['Hora de Entrada', 'Nombre del Chofer', 'Empresa', 'Tournée', 'Código de Barras', 'Tipo de Movimiento'];
   const rows = records.map(record => [
     record.timestamp.toLocaleString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }),
     record.driver.name,
     record.driver.company,
+    record.driver.tour,
     record.driver.id,
     record.type
   ]);
