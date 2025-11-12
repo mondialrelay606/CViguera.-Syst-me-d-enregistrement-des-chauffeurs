@@ -19,3 +19,9 @@ export interface ScanResult {
   status: ScanStatus;
   message: string;
 }
+
+export interface DailyStats {
+    totalCheckins: number;
+    uniqueDrivers: number;
+    busiestHour: string;
+}
