@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Driver, CheckinRecord, ScanStatus, type ScanResult as ScanResultType, CheckinType } from './types';
+import { Driver, CheckinRecord, ScanStatus, type ScanResult as ScanResultType, CheckinType, ReturnReport } from './types';
 import { driverService } from './services/driverService';
 import Clock from './components/Clock';
 import ScanResult from './components/ScanResult';
@@ -11,6 +11,8 @@ import DriverList from './components/DriverList';
 // --- Constantes de la aplicación ---
 const ADMIN_PASSWORD = 'admin'; // En una app real, esto debería ser seguro.
 const CHECKIN_LOG_STORAGE_KEY = 'checkinLog';
+const RETURN_REPORTS_STORAGE_KEY = 'returnReports';
+
 
 /**
  * Comprueba si una fecha dada corresponde al día de hoy.
@@ -41,15 +43,21 @@ const App: React.FC = () => {
     const [checkinLog, setCheckinLog] = useState<CheckinRecord[]>(() => {
         try {
             const savedLog = localStorage.getItem(CHECKIN_LOG_STORAGE_KEY);
-            // Aseguramos que los datos antiguos se lean correctamente
             return savedLog ? JSON.parse(savedLog).map((r: any) => ({
                 ...r, 
-                type: r.type || CheckinType.DEPARTURE, 
                 timestamp: new Date(r.timestamp),
-                hasUniform: r.hasUniform
             })) : [];
         } catch (error) {
             console.error("Error al cargar el registro de fichajes:", error);
+            return [];
+        }
+    });
+    const [returnReports, setReturnReports] = useState<ReturnReport[]>(() => {
+        try {
+            const savedReports = localStorage.getItem(RETURN_REPORTS_STORAGE_KEY);
+            return savedReports ? JSON.parse(savedReports) : [];
+        } catch (error) {
+            console.error("Error al cargar los reportes de retorno:", error);
             return [];
         }
     });
@@ -57,7 +65,7 @@ const App: React.FC = () => {
     const [lastScanResult, setLastScanResult] = useState<ScanResultType>({ status: ScanStatus.IDLE, message: '' });
     const [loading, setLoading] = useState(true);
     const [checkinType, setCheckinType] = useState<CheckinType>(CheckinType.DEPARTURE);
-    const [hasUniform, setHasUniform] = useState(true); // Nuevo estado para el uniforme
+    const [hasUniform, setHasUniform] = useState(true);
     
     const [isAdminView, setIsAdminView] = useState(false);
     const [showAdminLogin, setShowAdminLogin] = useState(false);
@@ -87,6 +95,14 @@ const App: React.FC = () => {
             console.error("Error al guardar el registro de fichajes:", error);
         }
     }, [checkinLog]);
+
+    useEffect(() => {
+        try {
+            localStorage.setItem(RETURN_REPORTS_STORAGE_KEY, JSON.stringify(returnReports));
+        } catch (error) {
+            console.error("Error al guardar los reportes de retorno:", error);
+        }
+    }, [returnReports]);
 
     const handleScan = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -191,15 +207,30 @@ const App: React.FC = () => {
             console.error(error);
         }
     };
+    
+    const handleAddReport = (newReport: ReturnReport) => {
+        setReturnReports(prevReports => [newReport, ...prevReports]);
+    };
+
+    const handleUpdateReport = (updatedReport: ReturnReport) => {
+        setReturnReports(prevReports => 
+            prevReports.map(report => 
+                report.id === updatedReport.id ? updatedReport : report
+            )
+        );
+    };
 
     if (isAdminView) {
         return <AdminDashboard 
             allRecords={checkinLog} 
             allDrivers={allDrivers} 
+            allReports={returnReports}
             onLogout={handleLogout} 
             onUpdateDrivers={handleUpdateDrivers}
             onUpdateSingleDriver={handleUpdateSingleDriver}
             onDeleteDriver={handleDeleteDriver}
+            onAddReport={handleAddReport}
+            onUpdateReport={handleUpdateReport}
         />;
     }
 
