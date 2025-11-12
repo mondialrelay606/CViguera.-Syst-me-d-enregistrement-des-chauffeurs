@@ -1,6 +1,5 @@
 import React from 'react';
 import { ScanStatus, type ScanResult as ScanResultType } from '../types';
-import { useTranslation } from '../contexts/LanguageContext';
 
 interface ScanResultProps {
   result: ScanResultType;
@@ -26,11 +25,10 @@ const InfoIcon = () => (
 
 
 const ScanResult: React.FC<ScanResultProps> = ({ result }) => {
-  const { t } = useTranslation();
   if (result.status === ScanStatus.IDLE) {
     return (
         <div className="h-28 flex items-center justify-center text-gray-500 italic">
-            {t('scanResult.waiting')}
+            Esperando escaneo...
         </div>
     );
   }
@@ -40,7 +38,7 @@ const ScanResult: React.FC<ScanResultProps> = ({ result }) => {
 
   const bgColor = isSuccess ? 'bg-green-50' : isError ? 'bg-red-50' : 'bg-blue-50';
   const borderColor = isSuccess ? 'border-green-300' : isError ? 'border-red-300' : 'border-blue-300';
-  const title = isSuccess ? t('scanResult.successTitle') : isError ? t('scanResult.errorTitle') : t('scanResult.infoTitle');
+  const title = isSuccess ? 'Acceso Correcto' : isError ? 'Error en el Escaneo' : 'Información';
   const titleColor = isSuccess ? 'text-green-800' : isError ? 'text-red-800' : 'text-blue-800';
   const textColor = isSuccess ? 'text-green-700' : isError ? 'text-red-700' : 'text-blue-700';
 
@@ -54,7 +52,7 @@ const ScanResult: React.FC<ScanResultProps> = ({ result }) => {
   }
 
   return (
-    <div className={`mt-4 p-4 rounded-lg border ${bgColor} ${borderColor} flex items-center space-x-4 rtl:space-x-reverse transition-all duration-300`}>
+    <div className={`mt-4 p-4 rounded-lg border ${bgColor} ${borderColor} flex items-center space-x-4 transition-all duration-300`}>
       <div>
         <Icon />
       </div>

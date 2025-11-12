@@ -1,6 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useTranslation } from '../contexts/LanguageContext';
-import LanguageSwitcher from './LanguageSwitcher';
 
 interface LoginProps {
     onDriverLogin: (id: string) => boolean;
@@ -14,7 +12,6 @@ const BarcodeIcon = () => (
 );
 
 const Login: React.FC<LoginProps> = ({ onDriverLogin, onAdminAccess }) => {
-    const { t } = useTranslation();
     const [id, setId] = useState('');
     const [error, setError] = useState<string | null>(null);
     const scanInputRef = useRef<HTMLInputElement>(null);
@@ -26,23 +23,19 @@ const Login: React.FC<LoginProps> = ({ onDriverLogin, onAdminAccess }) => {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
-        if (!id.trim()) return;
         const loginSuccessful = onDriverLogin(id);
         if (!loginSuccessful) {
-            setError(t('login.errorNotFound', { id }));
+            setError(`Código de barras "${id}" no reconocido.`);
             setId('');
         }
     }
 
     return (
-        <div className="min-h-screen flex flex-col justify-center items-center p-4">
-             <div className="absolute top-4 right-4">
-                <LanguageSwitcher />
-            </div>
-            <div className="max-w-md w-full bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-8 space-y-6">
+        <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center p-4">
+            <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 space-y-6">
                 <div className="text-center">
-                    <h1 className="text-3xl font-bold text-gray-800">{t('login.welcome')}</h1>
-                    <p className="text-gray-500">{t('login.title')}</p>
+                    <h1 className="text-3xl font-bold text-gray-800">Bienvenido</h1>
+                    <p className="text-gray-500">Sistema de Fichaje de Choferes</p>
                 </div>
                 
                 {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">{error}</div>}
@@ -50,24 +43,24 @@ const Login: React.FC<LoginProps> = ({ onDriverLogin, onAdminAccess }) => {
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label htmlFor="scan-input" className="block text-sm font-medium text-gray-700 text-center mb-2">
-                            {t('login.scanPrompt')}
+                            Escanee su código de barras para iniciar sesión
                         </label>
                         <div className="relative">
-                            <div className="absolute inset-y-0 start-0 ps-3 flex items-center pointer-events-none"><BarcodeIcon/></div>
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><BarcodeIcon/></div>
                             <input
                                 ref={scanInputRef}
                                 id="scan-input"
                                 type="text"
                                 value={id}
                                 onChange={(e) => setId(e.target.value)}
-                                placeholder={t('general.waitingForCode')}
-                                className="w-full ps-12 pe-4 py-3 text-lg border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="Esperando código..."
+                                className="w-full pl-12 pr-4 py-3 text-lg border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
                                 autoFocus
                             />
                         </div>
                     </div>
                      <button type="submit" className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                        {t('login.accessButton')}
+                        Acceder
                     </button>
                 </form>
             </div>
@@ -75,9 +68,9 @@ const Login: React.FC<LoginProps> = ({ onDriverLogin, onAdminAccess }) => {
             <div className="mt-6 text-center">
                 <button
                     onClick={onAdminAccess}
-                    className="text-sm font-medium text-gray-200 hover:text-white text-shadow"
+                    className="text-sm font-medium text-gray-600 hover:text-gray-800"
                 >
-                    {t('login.adminAccess')}
+                    Acceso de Administrador
                 </button>
             </div>
         </div>

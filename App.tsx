@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Driver, AttendanceRecord, ScanStatus, type ScanResult as ScanResultType } from './types';
 import { driverService } from './services/driverService';
 import { notificationService } from './services/notificationService';
-import { useTranslation } from './contexts/LanguageContext';
 import Login from './components/Login';
 import AdminPanel from './components/AdminPanel';
 import DriverDashboard from './components/DriverDashboard';
@@ -11,13 +10,11 @@ import VehiclePlateEntry from './components/VehiclePlateEntry';
 type View = 'login' | 'driver' | 'admin' | 'plateEntry';
 
 const App: React.FC = () => {
-    const { t } = useTranslation();
     const [allDrivers, setAllDrivers] = useState<Driver[]>([]);
     const [attendanceLog, setAttendanceLog] = useState<AttendanceRecord[]>([]);
     const [activeDriverIds, setActiveDriverIds] = useState<Set<string>>(new Set());
     const [lastScanResult, setLastScanResult] = useState<ScanResultType>({ status: ScanStatus.IDLE, message: '' });
     const [loading, setLoading] = useState(true);
-    const [isSyncing, setIsSyncing] = useState(false);
     const [view, setView] = useState<View>('login');
     const [currentUser, setCurrentUser] = useState<Driver | null>(null);
 
@@ -28,13 +25,13 @@ const App: React.FC = () => {
                 setAllDrivers(drivers);
             } catch (error) {
                 console.error("Error al cargar los choferes:", error);
-                setLastScanResult({ status: ScanStatus.ERROR, message: t('app.errors.loadDrivers') });
+                setLastScanResult({ status: ScanStatus.ERROR, message: 'No se pudo cargar la lista de choferes.' });
             } finally {
                 setLoading(false);
             }
         };
         loadDrivers();
-    }, [t]);
+    }, []);
 
     const handleScan = (barcode: string) => {
         const trimmedBarcode = barcode.trim();
@@ -43,7 +40,7 @@ const App: React.FC = () => {
         const foundDriver = allDrivers.find(driver => driver.id === trimmedBarcode);
 
         if (!foundDriver) {
-            setLastScanResult({ status: ScanStatus.ERROR, message: t('app.scan.notFound', { barcode: trimmedBarcode }) });
+            setLastScanResult({ status: ScanStatus.ERROR, message: `Código de barras "${trimmedBarcode}" no encontrado.` });
             return;
         }
 
@@ -64,9 +61,9 @@ const App: React.FC = () => {
                 newIds.delete(foundDriver.id);
                 return newIds;
             });
-            const message = t('app.scan.checkoutSuccess', { name: foundDriver.name });
+            const message = `Salida registrada para ${foundDriver.name}. ¡Hasta luego!`;
             setLastScanResult({ status: ScanStatus.INFO, message });
-            notificationService.sendNotification(`${t('app.notifications.checkout')}: ${foundDriver.name} (${foundDriver.company}) at ${now.toLocaleTimeString()}`);
+            notificationService.sendNotification(`SALIDA: ${foundDriver.name} (${foundDriver.company}) a las ${now.toLocaleTimeString()}`);
         } else {
             // Es una entrada (desde el panel de admin, sin matrícula)
             const newRecord: AttendanceRecord = {
@@ -76,9 +73,9 @@ const App: React.FC = () => {
             };
             setAttendanceLog(prevLog => [newRecord, ...prevLog]);
             setActiveDriverIds(prevIds => new Set(prevIds).add(foundDriver.id));
-            const message = t('app.scan.checkinSuccess', { name: foundDriver.name });
+            const message = `Entrada registrada para ${foundDriver.name}. ¡Bienvenido!`;
             setLastScanResult({ status: ScanStatus.SUCCESS, message });
-            notificationService.sendNotification(`${t('app.notifications.checkin')}: ${foundDriver.name} (${foundDriver.company}) at ${now.toLocaleTimeString()}`);
+            notificationService.sendNotification(`ENTRADA: ${foundDriver.name} (${foundDriver.company}) a las ${now.toLocaleTimeString()}`);
         }
     };
     
@@ -130,32 +127,15 @@ const App: React.FC = () => {
         setAttendanceLog(prevLog => [newRecord, ...prevLog]);
         setActiveDriverIds(prevIds => new Set(prevIds).add(currentUser.id));
 
-        notificationService.sendNotification(`${t('app.notifications.checkin')}: ${currentUser.name} (${currentUser.company}) with plate ${plate} at ${now.toLocaleTimeString()}`);
+        notificationService.sendNotification(`ENTRADA: ${currentUser.name} (${currentUser.company}) con matrícula ${plate} a las ${now.toLocaleTimeString()}`);
         
         setView('driver');
     };
 
-    const handleSyncDrivers = async () => {
-        setIsSyncing(true);
-        setLastScanResult({ status: ScanStatus.INFO, message: t('app.sync.syncing') });
-        try {
-            const updatedDrivers = await driverService.scrapeDrivers();
-            setAllDrivers(updatedDrivers);
-            setLastScanResult({ status: ScanStatus.SUCCESS, message: t('app.sync.success', { count: updatedDrivers.length }) });
-        } catch (error) {
-            console.error("Error al sincronizar los choferes:", error);
-            setLastScanResult({ status: ScanStatus.ERROR, message: t('app.sync.error') });
-        } finally {
-            setIsSyncing(false);
-        }
-    };
-
     if (loading && view === 'login') {
         return (
-            <div className="flex items-center justify-center h-screen">
-                <div className="bg-black/50 p-6 rounded-lg shadow-xl">
-                    <p className="text-white text-lg animate-pulse">{t('general.loadingApp')}</p>
-                </div>
+            <div className="flex items-center justify-center h-screen bg-gray-100">
+                <p className="text-gray-500 text-lg">Cargando aplicación...</p>
             </div>
         );
     }
@@ -185,8 +165,6 @@ const App: React.FC = () => {
                     onScan={handleScan}
                     lastScanResult={lastScanResult}
                     loading={loading}
-                    onSyncDrivers={handleSyncDrivers}
-                    isSyncing={isSyncing}
                 />
             );
         case 'login':

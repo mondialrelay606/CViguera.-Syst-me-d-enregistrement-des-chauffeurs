@@ -1,28 +1,16 @@
 import { AttendanceRecord, ReportRow } from '../types';
 
-type Translator = (key: string) => string;
-
-export const exportActivityLogToCSV = (records: AttendanceRecord[], t: Translator, filename: string = 'fichajes_actividad.csv'): void => {
+export const exportActivityLogToCSV = (records: AttendanceRecord[], filename: string = 'fichajes_actividad.csv'): void => {
   if (records.length === 0) {
-    alert(t('export.noActivity'));
+    alert('No hay registros para exportar.');
     return;
   }
 
-  const headers = [
-    t('export.headers.checkinDate'),
-    t('export.headers.checkinTime'),
-    t('export.headers.checkoutDate'),
-    t('export.headers.checkoutTime'),
-    t('export.headers.driverName'),
-    t('export.headers.company'),
-    t('export.headers.barcode'),
-    t('export.headers.plate')
-  ];
-  
+  const headers = ['Fecha Entrada', 'Hora Entrada', 'Fecha Salida', 'Hora Salida', 'Nombre del Chofer', 'Empresa', 'Código de Barras', 'Matrícula'];
   const rows = records.map(record => [
     record.checkinTime.toLocaleDateString('es-ES'),
     record.checkinTime.toLocaleTimeString('es-ES'),
-    record.checkoutTime ? record.checkoutTime.toLocaleDateString('es-ES') : t('checkinLog.status.inside').toUpperCase(),
+    record.checkoutTime ? record.checkoutTime.toLocaleDateString('es-ES') : 'DENTRO',
     record.checkoutTime ? record.checkoutTime.toLocaleTimeString('es-ES') : '-',
     record.driver.name,
     record.driver.company,
@@ -45,21 +33,13 @@ export const exportActivityLogToCSV = (records: AttendanceRecord[], t: Translato
 };
 
 
-export const exportReportToCSV = (records: ReportRow[], t: Translator, filename: string = 'reporte_asistencia.csv'): void => {
+export const exportReportToCSV = (records: ReportRow[], filename: string = 'reporte_asistencia.csv'): void => {
   if (records.length === 0) {
-    alert(t('export.noReportData'));
+    alert('No hay datos en el reporte para exportar.');
     return;
   }
 
-  const headers = [
-    t('export.headers.driver'),
-    t('export.headers.company'),
-    t('export.headers.checkin'),
-    t('export.headers.checkout'),
-    t('export.headers.hoursWorked'),
-    t('export.headers.plate')
-  ];
-  
+  const headers = ['Chofer', 'Empresa', 'Entrada', 'Salida', 'Horas Trabajadas', 'Matrícula'];
   const rows = records.map(record => [
     `"${record.driverName}"`,
     `"${record.driverCompany}"`,
