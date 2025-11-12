@@ -5,17 +5,9 @@ interface ReturnReportFormModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSave: (report: ReturnReport) => void;
-    checkinRecords: CheckinRecord[];
-    existingReports: ReturnReport[];
     reportToEdit?: ReturnReport | null;
+    checkinForNewReport?: CheckinRecord | null;
 }
-
-const isToday = (someDate: Date): boolean => {
-    const today = new Date();
-    return someDate.getDate() === today.getDate() &&
-        someDate.getMonth() === today.getMonth() &&
-        someDate.getFullYear() === today.getFullYear();
-};
 
 const initialState = {
     selectedCheckinId: '',
@@ -36,19 +28,12 @@ type FormState = {
 }
 
 
-const ReturnReportFormModal: React.FC<ReturnReportFormModalProps> = ({ isOpen, onClose, onSave, checkinRecords, existingReports, reportToEdit }) => {
+const ReturnReportFormModal: React.FC<ReturnReportFormModalProps> = ({ isOpen, onClose, onSave, reportToEdit, checkinForNewReport }) => {
     const [formData, setFormData] = useState<FormState>(initialState);
+    const [displayCheckin, setDisplayCheckin] = useState<CheckinRecord | null>(null);
+    
     const isEditMode = !!reportToEdit;
-
-    const eligibleCheckins = useMemo(() => {
-        const reportedCheckinIds = new Set(existingReports.map(r => r.checkinId));
-        return checkinRecords.filter(r => {
-            const checkinId = `${r.driver.id}-${r.timestamp.getTime()}`;
-            return r.type === CheckinType.RETURN && 
-                isToday(r.timestamp) &&
-                (!reportedCheckinIds.has(checkinId) || checkinId === reportToEdit?.checkinId);
-        });
-    }, [checkinRecords, existingReports, reportToEdit]);
+    const isCreateModeWithCheckin = !!checkinForNewReport;
 
     useEffect(() => {
         if (isOpen) {
@@ -61,11 +46,32 @@ const ReturnReportFormModal: React.FC<ReturnReportFormModalProps> = ({ isOpen, o
                     pudosApmFermes: reportToEdit.pudosApmFermes?.map((item, index) => ({ ...item, id: `fer-${index}-${Date.now()}` })) || [],
                     notes: reportToEdit.notes || '',
                 });
+                // Find and set the displayCheckin for edit mode from report data
+                // This part is for display only, so it might need access to `allRecords` or just display what's in the report
+                setDisplayCheckin({ 
+                    driver: { 
+                        id: reportToEdit.driverId, 
+                        name: reportToEdit.driverName, 
+                        subcontractor: reportToEdit.subcontractor,
+                        company: '', // Placeholder
+                        defaultPlate: '', // Placeholder
+                        tour: '' // Placeholder
+                    },
+                    timestamp: new Date(reportToEdit.reportDate),
+                    type: CheckinType.RETURN
+                });
+            } else if (isCreateModeWithCheckin && checkinForNewReport) {
+                setFormData({
+                    ...initialState,
+                    selectedCheckinId: `${checkinForNewReport.driver.id}-${checkinForNewReport.timestamp.getTime()}`,
+                });
+                setDisplayCheckin(checkinForNewReport);
             } else {
                 setFormData(initialState);
+                setDisplayCheckin(null);
             }
         }
-    }, [isOpen, reportToEdit]);
+    }, [isOpen, reportToEdit, checkinForNewReport]);
     
     const handleListChange = <T extends keyof FormState>(listName: T, id: string, field: string, value: any) => {
         setFormData(prev => {
@@ -100,18 +106,19 @@ const ReturnReportFormModal: React.FC<ReturnReportFormModalProps> = ({ isOpen, o
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        const selectedCheckin = checkinRecords.find(c => `${c.driver.id}-${c.timestamp.getTime()}` === formData.selectedCheckinId);
+        
+        const driverInfoProvider = isCreateModeWithCheckin ? checkinForNewReport : displayCheckin;
 
-        if (!selectedCheckin) {
-            alert("Por favor, seleccione un fichaje de retorno válido.");
+        if (!formData.selectedCheckinId || !driverInfoProvider) {
+            alert("No hay un fichaje de retorno válido asociado a este reporte.");
             return;
         }
 
         const reportData: Omit<ReturnReport, 'id'> = {
             checkinId: formData.selectedCheckinId,
-            driverId: selectedCheckin.driver.id,
-            driverName: selectedCheckin.driver.name,
-            subcontractor: selectedCheckin.driver.subcontractor,
+            driverId: driverInfoProvider.driver.id,
+            driverName: driverInfoProvider.driver.name,
+            subcontractor: driverInfoProvider.driver.subcontractor,
             reportDate: isEditMode ? reportToEdit.reportDate : new Date().toISOString(),
             lettreDeVoiture: formData.lettreDeVoiture,
             notes: formData.notes.trim() || undefined,
@@ -140,21 +147,12 @@ const ReturnReportFormModal: React.FC<ReturnReportFormModalProps> = ({ isOpen, o
                         
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Fichaje de Retorno del Chofer</label>
-                            <select
-                                value={formData.selectedCheckinId}
-                                onChange={e => setFormData(prev => ({ ...prev, selectedCheckinId: e.target.value }))}
-                                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md disabled:bg-gray-100 disabled:text-gray-500"
-                                required
-                                disabled={isEditMode}
-                            >
-                                <option value="" disabled>-- Seleccione un chofer y su hora de retorno --</option>
-                                {eligibleCheckins.map(c => (
-                                    <option key={`${c.driver.id}-${c.timestamp.getTime()}`} value={`${c.driver.id}-${c.timestamp.getTime()}`}>
-                                        {c.driver.name} ({c.driver.subcontractor}) - Retorno a las {c.timestamp.toLocaleTimeString('es-ES')}
-                                    </option>
-                                ))}
-                            </select>
-                            {eligibleCheckins.length === 0 && !isEditMode && <p className="text-xs text-red-600 mt-1">No hay retornos de hoy pendientes de reporte.</p>}
+                            <div className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-gray-300 bg-gray-100 text-gray-700 sm:text-sm rounded-md">
+                                {displayCheckin ? 
+                                    `${displayCheckin.driver.name} (${displayCheckin.driver.subcontractor}) - Retorno a las ${displayCheckin.timestamp.toLocaleTimeString('es-ES')}`
+                                    : 'No seleccionado'
+                                }
+                            </div>
                         </div>
 
                         <div className="p-4 border rounded-md mt-4">

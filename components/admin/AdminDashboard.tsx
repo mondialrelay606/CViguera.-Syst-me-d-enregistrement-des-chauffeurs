@@ -2,11 +2,11 @@ import React, { useState, useMemo } from 'react';
 import { CheckinRecord, DailyStats, Driver, CheckinType, ReturnReport } from '../../types';
 import { exportCheckinsToCSV } from '../../utils/csvExporter';
 import { parseDriversCSV } from '../../utils/csvParser';
-import { calculateDailyStats, getHourlyDistribution } from '../../utils/reporting';
+import { calculateDailyStats, getPendingReturnCheckins } from '../../utils/reporting';
 import SummaryCard from './SummaryCard';
-import HourlyCheckinChart from './HourlyCheckinChart';
 import DriverList from '../DriverList';
 import ReturnReportManager from './ReturnReportManager';
+import PendingReturns from './PendingReturns';
 
 interface AdminDashboardProps {
   allRecords: CheckinRecord[];
@@ -31,7 +31,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers,
   const [activeTab, setActiveTab] = useState<'stats' | 'drivers' | 'reports'>('stats');
 
   const dailyStats = useMemo(() => calculateDailyStats(allRecords), [allRecords]);
-  const hourlyData = useMemo(() => getHourlyDistribution(allRecords), [allRecords]);
+  const pendingReturns = useMemo(() => getPendingReturnCheckins(allRecords), [allRecords]);
+
 
   const filteredRecords = useMemo(() => {
     if (!searchTerm.trim()) return allRecords;
@@ -116,8 +117,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers,
 
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
               <div className="xl:col-span-1 bg-white p-6 rounded-lg shadow-md">
-                <h2 className="text-xl font-bold text-gray-700 mb-4">Actividad por Hora</h2>
-                <HourlyCheckinChart data={hourlyData} />
+                 <PendingReturns pendingCheckins={pendingReturns} />
               </div>
               <div className="xl:col-span-2 bg-white p-6 rounded-lg shadow-md flex flex-col">
                 <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
