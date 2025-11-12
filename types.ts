@@ -35,20 +35,20 @@ export interface ReturnReport {
         tamponDuRelais: boolean;
         horaireDePassageLocker: boolean;
     };
-    saturationLocker?: {
+    saturationLockers?: {
         lockerName: string;
         sacs: number;
         vracs: number;
-    };
-    livraisonManquante?: {
+    }[];
+    livraisonsManquantes?: {
         pudoApmName: string;
         sacs: number;
         vracs: number;
-    };
-    pudoApmFerme?: {
+    }[];
+    pudosApmFermes?: {
         pudoApmName: string;
         reason: PudoApmFermeReason;
-    };
+    }[];
     notes?: string;
 }
 

@@ -20,14 +20,24 @@ const isToday = (someDate: Date): boolean => {
 const initialState = {
     selectedCheckinId: '',
     lettreDeVoiture: { tamponDuRelais: false, horaireDePassageLocker: false },
-    saturation: { active: false, lockerName: '', sacs: 0, vracs: 0 },
-    manquante: { active: false, pudoApmName: '', sacs: 0, vracs: 0 },
-    ferme: { active: false, pudoApmName: '', reason: PudoApmFermeReason.CIERRE_SALVAJE },
+    saturationLockers: [],
+    livraisonsManquantes: [],
+    pudosApmFermes: [],
     notes: '',
 };
 
+type FormState = {
+    selectedCheckinId: string;
+    lettreDeVoiture: { tamponDuRelais: boolean; horaireDePassageLocker: boolean };
+    saturationLockers: ({ id: string; } & NonNullable<ReturnReport['saturationLockers']>[0])[];
+    livraisonsManquantes: ({ id: string; } & NonNullable<ReturnReport['livraisonsManquantes']>[0])[];
+    pudosApmFermes: ({ id: string; } & NonNullable<ReturnReport['pudosApmFermes']>[0])[];
+    notes: string;
+}
+
+
 const ReturnReportFormModal: React.FC<ReturnReportFormModalProps> = ({ isOpen, onClose, onSave, checkinRecords, existingReports, reportToEdit }) => {
-    const [formData, setFormData] = useState(initialState);
+    const [formData, setFormData] = useState<FormState>(initialState);
     const isEditMode = !!reportToEdit;
 
     const eligibleCheckins = useMemo(() => {
@@ -43,26 +53,12 @@ const ReturnReportFormModal: React.FC<ReturnReportFormModalProps> = ({ isOpen, o
     useEffect(() => {
         if (isOpen) {
             if (isEditMode && reportToEdit) {
-                setFormData({
+                 setFormData({
                     selectedCheckinId: reportToEdit.checkinId,
                     lettreDeVoiture: reportToEdit.lettreDeVoiture,
-                    saturation: {
-                        active: !!reportToEdit.saturationLocker,
-                        lockerName: reportToEdit.saturationLocker?.lockerName || '',
-                        sacs: reportToEdit.saturationLocker?.sacs || 0,
-                        vracs: reportToEdit.saturationLocker?.vracs || 0,
-                    },
-                    manquante: {
-                        active: !!reportToEdit.livraisonManquante,
-                        pudoApmName: reportToEdit.livraisonManquante?.pudoApmName || '',
-                        sacs: reportToEdit.livraisonManquante?.sacs || 0,
-                        vracs: reportToEdit.livraisonManquante?.vracs || 0,
-                    },
-                    ferme: {
-                        active: !!reportToEdit.pudoApmFerme,
-                        pudoApmName: reportToEdit.pudoApmFerme?.pudoApmName || '',
-                        reason: reportToEdit.pudoApmFerme?.reason || PudoApmFermeReason.CIERRE_SALVAJE,
-                    },
+                    saturationLockers: reportToEdit.saturationLockers?.map((item, index) => ({ ...item, id: `sat-${index}-${Date.now()}` })) || [],
+                    livraisonsManquantes: reportToEdit.livraisonsManquantes?.map((item, index) => ({ ...item, id: `man-${index}-${Date.now()}` })) || [],
+                    pudosApmFermes: reportToEdit.pudosApmFermes?.map((item, index) => ({ ...item, id: `fer-${index}-${Date.now()}` })) || [],
                     notes: reportToEdit.notes || '',
                 });
             } else {
@@ -70,18 +66,38 @@ const ReturnReportFormModal: React.FC<ReturnReportFormModalProps> = ({ isOpen, o
             }
         }
     }, [isOpen, reportToEdit]);
-
-    const handleChange = (section: keyof typeof initialState, field: string, value: any) => {
-        if (section === 'lettreDeVoiture' || section === 'saturation' || section === 'manquante' || section === 'ferme') {
-            setFormData(prev => ({
+    
+    const handleListChange = <T extends keyof FormState>(listName: T, id: string, field: string, value: any) => {
+        setFormData(prev => {
+            const list = prev[listName] as any[];
+            return {
                 ...prev,
-                [section]: { ...(prev[section] as object), [field]: value }
-            }));
-        } else {
-            setFormData(prev => ({ ...prev, [field]: value }));
-        }
+                [listName]: list.map(item => item.id === id ? { ...item, [field]: value } : item)
+            };
+        });
     };
     
+    const addToList = <T extends keyof FormState>(listName: T, newItem: any) => {
+         setFormData(prev => {
+            const list = prev[listName] as any[];
+            return {
+                ...prev,
+                [listName]: [...list, { ...newItem, id: `${listName}-${Date.now()}` }]
+            }
+        });
+    };
+    
+    const removeFromList = <T extends keyof FormState>(listName: T, id: string) => {
+        setFormData(prev => {
+            const list = prev[listName] as any[];
+            return {
+                ...prev,
+                [listName]: list.filter(item => item.id !== id)
+            }
+        });
+    };
+
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         const selectedCheckin = checkinRecords.find(c => `${c.driver.id}-${c.timestamp.getTime()}` === formData.selectedCheckinId);
@@ -99,9 +115,9 @@ const ReturnReportFormModal: React.FC<ReturnReportFormModalProps> = ({ isOpen, o
             reportDate: isEditMode ? reportToEdit.reportDate : new Date().toISOString(),
             lettreDeVoiture: formData.lettreDeVoiture,
             notes: formData.notes.trim() || undefined,
-            saturationLocker: formData.saturation.active ? { lockerName: formData.saturation.lockerName, sacs: formData.saturation.sacs, vracs: formData.saturation.vracs } : undefined,
-            livraisonManquante: formData.manquante.active ? { pudoApmName: formData.manquante.pudoApmName, sacs: formData.manquante.sacs, vracs: formData.manquante.vracs } : undefined,
-            pudoApmFerme: formData.ferme.active ? { pudoApmName: formData.ferme.pudoApmName, reason: formData.ferme.reason } : undefined,
+            saturationLockers: formData.saturationLockers.filter(i => i.lockerName.trim()).map(({ id, ...rest }) => rest),
+            livraisonsManquantes: formData.livraisonsManquantes.filter(i => i.pudoApmName.trim()).map(({ id, ...rest }) => rest),
+            pudosApmFermes: formData.pudosApmFermes.filter(i => i.pudoApmName.trim()).map(({ id, ...rest }) => rest),
         };
         
         const finalReport: ReturnReport = {
@@ -114,16 +130,6 @@ const ReturnReportFormModal: React.FC<ReturnReportFormModalProps> = ({ isOpen, o
     };
 
     if (!isOpen) return null;
-
-    const renderSection = (title: string, isActive: boolean, onToggle: () => void, children: React.ReactNode) => (
-        <div className="p-4 border rounded-md mt-4">
-            <div className="flex items-center justify-between">
-                <h4 className="font-semibold text-gray-700">{title}</h4>
-                <input type="checkbox" className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500" checked={isActive} onChange={onToggle} />
-            </div>
-            {isActive && <div className="mt-4 space-y-3">{children}</div>}
-        </div>
-    );
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-start pt-10 pb-10 overflow-y-auto">
@@ -154,40 +160,67 @@ const ReturnReportFormModal: React.FC<ReturnReportFormModalProps> = ({ isOpen, o
                         <div className="p-4 border rounded-md mt-4">
                            <h4 className="font-semibold text-gray-700 mb-3">Lettre de Voiture</h4>
                             <div className="flex items-center gap-6">
-                                <label className="flex items-center"><input type="checkbox" className="h-4 w-4 mr-2" checked={formData.lettreDeVoiture.tamponDuRelais} onChange={e => handleChange('lettreDeVoiture', 'tamponDuRelais', e.target.checked)} /> Tampon du relais</label>
-                                <label className="flex items-center"><input type="checkbox" className="h-4 w-4 mr-2" checked={formData.lettreDeVoiture.horaireDePassageLocker} onChange={e => handleChange('lettreDeVoiture', 'horaireDePassageLocker', e.target.checked)} /> Horaire de passage locker</label>
+                                <label className="flex items-center"><input type="checkbox" className="h-4 w-4 mr-2" checked={formData.lettreDeVoiture.tamponDuRelais} onChange={e => setFormData(prev => ({...prev, lettreDeVoiture: {...prev.lettreDeVoiture, tamponDuRelais: e.target.checked }}))} /> Tampon du relais</label>
+                                <label className="flex items-center"><input type="checkbox" className="h-4 w-4 mr-2" checked={formData.lettreDeVoiture.horaireDePassageLocker} onChange={e => setFormData(prev => ({...prev, lettreDeVoiture: {...prev.lettreDeVoiture, horaireDePassageLocker: e.target.checked }}))} /> Horaire de passage locker</label>
                             </div>
                         </div>
                         
-                        {renderSection("Incidencia: Saturation Locker", formData.saturation.active, () => handleChange('saturation', 'active', !formData.saturation.active),
-                            <>
-                                <input type="text" placeholder="Nombre del Locker" value={formData.saturation.lockerName} onChange={e => handleChange('saturation', 'lockerName', e.target.value)} className="w-full p-2 border rounded-md" required={formData.saturation.active} />
-                                <div className="grid grid-cols-2 gap-4">
-                                    <input type="number" placeholder="Nº Sacos" value={formData.saturation.sacs} onChange={e => handleChange('saturation', 'sacs', parseInt(e.target.value) || 0)} min="0" className="w-full p-2 border rounded-md" />
-                                    <input type="number" placeholder="Nº Vracs" value={formData.saturation.vracs} onChange={e => handleChange('saturation', 'vracs', parseInt(e.target.value) || 0)} min="0" className="w-full p-2 border rounded-md" />
+                        {/* Saturation Lockers */}
+                        <div className="p-4 border rounded-md mt-4">
+                            <h4 className="font-semibold text-gray-700 mb-2">Incidencia: Saturation Locker</h4>
+                            {formData.saturationLockers.map((item, index) => (
+                                <div key={item.id} className="p-3 mb-2 border rounded-lg bg-gray-50 space-y-2">
+                                    <div className="flex justify-between items-center">
+                                       <span className="text-sm font-medium text-gray-600">Saturación #{index + 1}</span>
+                                       <button type="button" onClick={() => removeFromList('saturationLockers', item.id)} className="text-red-500 hover:text-red-700 text-sm">Eliminar</button>
+                                    </div>
+                                    <input type="text" placeholder="Nombre del Locker" value={item.lockerName} onChange={e => handleListChange('saturationLockers', item.id, 'lockerName', e.target.value)} className="w-full p-2 border rounded-md" required />
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <input type="number" placeholder="Nº Sacos" value={item.sacs} onChange={e => handleListChange('saturationLockers', item.id, 'sacs', parseInt(e.target.value) || 0)} min="0" className="w-full p-2 border rounded-md" />
+                                        <input type="number" placeholder="Nº Vracs" value={item.vracs} onChange={e => handleListChange('saturationLockers', item.id, 'vracs', parseInt(e.target.value) || 0)} min="0" className="w-full p-2 border rounded-md" />
+                                    </div>
                                 </div>
-                            </>
-                        )}
+                            ))}
+                            <button type="button" onClick={() => addToList('saturationLockers', { lockerName: '', sacs: 0, vracs: 0 })} className="mt-2 text-sm text-blue-600 hover:text-blue-800 font-semibold">+ Añadir Saturación</button>
+                        </div>
                         
-                        {renderSection("Incidencia: Livraison Manquante", formData.manquante.active, () => handleChange('manquante', 'active', !formData.manquante.active),
-                            <>
-                                <input type="text" placeholder="Nombre PUDO/APM" value={formData.manquante.pudoApmName} onChange={e => handleChange('manquante', 'pudoApmName', e.target.value)} className="w-full p-2 border rounded-md" required={formData.manquante.active} />
-                                <div className="grid grid-cols-2 gap-4">
-                                    <input type="number" placeholder="Nº Sacos" value={formData.manquante.sacs} onChange={e => handleChange('manquante', 'sacs', parseInt(e.target.value) || 0)} min="0" className="w-full p-2 border rounded-md" />
-                                    <input type="number" placeholder="Nº Vracs" value={formData.manquante.vracs} onChange={e => handleChange('manquante', 'vracs', parseInt(e.target.value) || 0)} min="0" className="w-full p-2 border rounded-md" />
+                        {/* Livraison Manquante */}
+                        <div className="p-4 border rounded-md mt-4">
+                             <h4 className="font-semibold text-gray-700 mb-2">Incidencia: Livraison Manquante</h4>
+                             {formData.livraisonsManquantes.map((item, index) => (
+                                <div key={item.id} className="p-3 mb-2 border rounded-lg bg-gray-50 space-y-2">
+                                     <div className="flex justify-between items-center">
+                                       <span className="text-sm font-medium text-gray-600">Entrega Faltante #{index + 1}</span>
+                                       <button type="button" onClick={() => removeFromList('livraisonsManquantes', item.id)} className="text-red-500 hover:text-red-700 text-sm">Eliminar</button>
+                                    </div>
+                                    <input type="text" placeholder="Nombre PUDO/APM" value={item.pudoApmName} onChange={e => handleListChange('livraisonsManquantes', item.id, 'pudoApmName', e.target.value)} className="w-full p-2 border rounded-md" required />
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <input type="number" placeholder="Nº Sacos" value={item.sacs} onChange={e => handleListChange('livraisonsManquantes', item.id, 'sacs', parseInt(e.target.value) || 0)} min="0" className="w-full p-2 border rounded-md" />
+                                        <input type="number" placeholder="Nº Vracs" value={item.vracs} onChange={e => handleListChange('livraisonsManquantes', item.id, 'vracs', parseInt(e.target.value) || 0)} min="0" className="w-full p-2 border rounded-md" />
+                                    </div>
                                 </div>
-                            </>
-                        )}
-
-                        {renderSection("Incidencia: PUDO/APM Fermé", formData.ferme.active, () => handleChange('ferme', 'active', !formData.ferme.active),
-                             <>
-                                <input type="text" placeholder="Nombre PUDO/APM" value={formData.ferme.pudoApmName} onChange={e => handleChange('ferme', 'pudoApmName', e.target.value)} className="w-full p-2 border rounded-md" required={formData.ferme.active} />
-                                <select value={formData.ferme.reason} onChange={e => handleChange('ferme', 'reason', e.target.value as PudoApmFermeReason)} className="w-full p-2 border rounded-md mt-2">
-                                    <option value={PudoApmFermeReason.CIERRE_SALVAJE}>Cierre salvaje</option>
-                                    <option value={PudoApmFermeReason.PANNE}>Panne</option>
-                                </select>
-                             </>
-                        )}
+                             ))}
+                             <button type="button" onClick={() => addToList('livraisonsManquantes', { pudoApmName: '', sacs: 0, vracs: 0 })} className="mt-2 text-sm text-blue-600 hover:text-blue-800 font-semibold">+ Añadir Entrega Faltante</button>
+                        </div>
+                        
+                        {/* PUDO/APM Fermé */}
+                        <div className="p-4 border rounded-md mt-4">
+                             <h4 className="font-semibold text-gray-700 mb-2">Incidencia: PUDO/APM Fermé</h4>
+                             {formData.pudosApmFermes.map((item, index) => (
+                                <div key={item.id} className="p-3 mb-2 border rounded-lg bg-gray-50 space-y-2">
+                                     <div className="flex justify-between items-center">
+                                       <span className="text-sm font-medium text-gray-600">Cierre #{index + 1}</span>
+                                       <button type="button" onClick={() => removeFromList('pudosApmFermes', item.id)} className="text-red-500 hover:text-red-700 text-sm">Eliminar</button>
+                                    </div>
+                                    <input type="text" placeholder="Nombre PUDO/APM" value={item.pudoApmName} onChange={e => handleListChange('pudosApmFermes', item.id, 'pudoApmName', e.target.value)} className="w-full p-2 border rounded-md" required />
+                                    <select value={item.reason} onChange={e => handleListChange('pudosApmFermes', item.id, 'reason', e.target.value as PudoApmFermeReason)} className="w-full p-2 border rounded-md mt-2">
+                                        <option value={PudoApmFermeReason.CIERRE_SALVAJE}>Cierre salvaje</option>
+                                        <option value={PudoApmFermeReason.PANNE}>Panne</option>
+                                    </select>
+                                </div>
+                             ))}
+                             <button type="button" onClick={() => addToList('pudosApmFermes', { pudoApmName: '', reason: PudoApmFermeReason.CIERRE_SALVAJE })} className="mt-2 text-sm text-blue-600 hover:text-blue-800 font-semibold">+ Añadir Cierre PUDO/APM</button>
+                        </div>
 
                         <div className="mt-4">
                             <label className="block text-sm font-medium text-gray-700">Notas Adicionales</label>

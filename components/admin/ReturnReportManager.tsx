@@ -67,10 +67,18 @@ const ReturnReportManager: React.FC<ReturnReportManagerProps> = ({ allReports, a
 
     const renderIssueSummary = (report: ReturnReport) => {
         const issues: string[] = [];
-        if (report.saturationLocker) issues.push(`Saturación Locker (${report.saturationLocker.lockerName})`);
-        if (report.livraisonManquante) issues.push(`Entrega Faltante (${report.livraisonManquante.pudoApmName})`);
-        if (report.pudoApmFerme) issues.push(`PUDO/APM Cerrado (${report.pudoApmFerme.pudoApmName})`);
-        if (report.notes) issues.push('Notas adicionales');
+        if (report.saturationLockers && report.saturationLockers.length > 0) {
+            issues.push(`Saturación Locker (${report.saturationLockers.length})`);
+        }
+        if (report.livraisonsManquantes && report.livraisonsManquantes.length > 0) {
+            issues.push(`Entrega Faltante (${report.livraisonsManquantes.length})`);
+        }
+        if (report.pudosApmFermes && report.pudosApmFermes.length > 0) {
+            issues.push(`PUDO/APM Cerrado (${report.pudosApmFermes.length})`);
+        }
+        if (report.notes) {
+            issues.push('Notas adicionales');
+        }
         return issues.length > 0 ? issues.join(', ') : <span className="text-gray-400">Sin incidencias</span>;
     };
 
