@@ -1,5 +1,5 @@
 {
-  "name": "Sistema de Fichaje de Choferes",
-  "description": "Una aplicación para registrar la entrada de choferes mediante el escaneo de códigos de barras. Mantiene un registro de las entradas y gestiona una lista de choferes autorizados.",
+  "name": "Système de Pointage des Chauffeurs",
+  "description": "Une application pour enregistrer l'arrivée des chauffeurs en scannant des codes-barres. Elle conserve un historique des pointages et gère une liste de chauffeurs autorisés.",
   "requestFramePermissions": []
 }

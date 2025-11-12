@@ -95,47 +95,47 @@ const DriverList: React.FC<DriverListProps> = ({ drivers, onUpdateDriver, onDele
       name={field}
       value={value}
       onChange={handleDataChange}
-      className="w-full p-1 border border-blue-300 rounded-md bg-white"
+      className="w-full p-1 border border-fuchsia-300 rounded-md bg-white focus:ring-1 focus:ring-[#9c0058] focus:border-[#9c0058]"
     />
   );
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md h-full flex flex-col">
-      <h2 className="text-xl font-bold text-gray-700 mb-4">Lista de Choferes ({drivers.length})</h2>
+      <h2 className="text-xl font-bold text-gray-700 mb-4">Liste des Chauffeurs ({drivers.length})</h2>
       <div className="mb-4 relative">
         <SearchIcon />
         <input
           type="text"
-          placeholder="Buscar por cualquier campo..."
+          placeholder="Rechercher par n'importe quel champ..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-10 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+          className="w-full pl-10 p-2 border border-gray-300 rounded-lg focus:ring-[#9c0058] focus:border-[#9c0058]"
         />
       </div>
       <div className="flex-grow overflow-y-auto">
         {filteredDrivers.length === 0 ? (
           <div className="flex items-center justify-center h-full text-gray-500">
-            <p>No se encontraron choferes.</p>
+            <p>Aucun chauffeur trouvé.</p>
           </div>
         ) : (
           <div className="relative overflow-x-auto">
             <table className="w-full text-sm text-left text-gray-500">
               <thead className="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0">
                 <tr>
-                  <th scope="col" className="px-6 py-3">Nombre</th>
-                  <th scope="col" className="px-6 py-3">Subcontratista</th>
+                  <th scope="col" className="px-6 py-3">Nom</th>
+                  <th scope="col" className="px-6 py-3">Sous-traitant</th>
                   <th scope="col" className="px-6 py-3">Plaque</th>
                   <th scope="col" className="px-6 py-3">Tournée</th>
-                  <th scope="col" className="px-6 py-3">Telephone</th>
+                  <th scope="col" className="px-6 py-3">Téléphone</th>
                   <th scope="col" className="px-6 py-3">Identifiant</th>
-                  <th scope="col" className="px-6 py-3 text-center">Acciones</th>
+                  <th scope="col" className="px-6 py-3 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredDrivers.map((driver) => {
                   const isEditing = editingDriverId === driver.id;
                   return (
-                    <tr key={driver.id} className={`bg-white border-b hover:bg-gray-50 ${isEditing ? 'bg-blue-50' : ''}`}>
+                    <tr key={driver.id} className={`bg-white border-b hover:bg-gray-50 ${isEditing ? 'bg-fuchsia-50' : ''}`}>
                       <td className="px-6 py-2">{isEditing ? renderEditableCell('name', editedData.name || '') : driver.name}</td>
                       <td className="px-6 py-2">{isEditing ? renderEditableCell('subcontractor', editedData.subcontractor || '') : driver.subcontractor}</td>
                       <td className="px-6 py-2">{isEditing ? renderEditableCell('plate', editedData.plate || '') : driver.plate}</td>
@@ -146,19 +146,19 @@ const DriverList: React.FC<DriverListProps> = ({ drivers, onUpdateDriver, onDele
                         <div className="flex items-center justify-center space-x-2">
                           {isEditing ? (
                             <>
-                              <button onClick={() => handleSaveClick(driver)} className="text-green-600 hover:text-green-800" title="Guardar">
+                              <button onClick={() => handleSaveClick(driver)} className="text-green-600 hover:text-green-800" title="Enregistrer">
                                 <SaveIcon />
                               </button>
-                              <button onClick={handleCancelClick} className="text-gray-600 hover:text-gray-800" title="Cancelar">
+                              <button onClick={handleCancelClick} className="text-gray-600 hover:text-gray-800" title="Annuler">
                                 <CancelIcon />
                               </button>
                             </>
                           ) : (
                             <>
-                              <button onClick={() => handleEditClick(driver)} className="text-blue-600 hover:text-blue-800" title="Editar">
+                              <button onClick={() => handleEditClick(driver)} className="text-[#9c0058] hover:text-[#86004c]" title="Modifier">
                                 <EditIcon />
                               </button>
-                              <button onClick={() => onDeleteDriver(driver.id)} className="text-red-600 hover:text-red-800" title="Eliminar">
+                              <button onClick={() => onDeleteDriver(driver.id)} className="text-red-600 hover:text-red-800" title="Supprimer">
                                 <DeleteIcon />
                               </button>
                             </>

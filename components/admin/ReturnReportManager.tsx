@@ -41,10 +41,11 @@ const ExportExcelIcon = () => (
 );
 
 
-const ReturnReportManager: React.FC<ReturnReportManagerProps> = ({ allReports, allRecords, allDrivers, onAddReport, onUpdateReport }) => {
+const ReturnReportManager: React.FC<ReturnReportManagerProps> = ({ allRecords, allDrivers, allReports, onAddReport, onUpdateReport }) => {
     const [showModal, setShowModal] = useState(false);
     const [editingReport, setEditingReport] = useState<ReturnReport | null>(null);
     const [checkinForNewReport, setCheckinForNewReport] = useState<CheckinRecord | null>(null);
+    const [departureCommentForNewReport, setDepartureCommentForNewReport] = useState<string | undefined>(undefined);
     const [filterSubcontractor, setFilterSubcontractor] = useState<string>('');
 
     const todayReturnCheckins = useMemo(() => {
@@ -85,16 +86,26 @@ const ReturnReportManager: React.FC<ReturnReportManagerProps> = ({ allReports, a
         });
 
         if (reportsToExport.length === 0) {
-            alert('No hay reportes para exportar con el filtro actual.');
+            alert("Aucun rapport à exporter avec le filtre actuel.");
             return;
         }
 
-        exportReportsToExcel(reportsToExport, `reportes_${filterSubcontractor || 'todos'}_${new Date().toISOString().split('T')[0]}.xlsx`);
+        exportReportsToExcel(reportsToExport, `rapports_${filterSubcontractor || 'tous'}_${new Date().toISOString().split('T')[0]}.xlsx`);
     };
 
     const handleCreateClick = (checkin: CheckinRecord) => {
+        const lastDeparture = allRecords
+            .filter(r => 
+                r.driver.id === checkin.driver.id && 
+                r.type === CheckinType.DEPARTURE && 
+                isToday(r.timestamp) &&
+                r.timestamp < checkin.timestamp
+            )
+            .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())[0];
+
         setEditingReport(null);
         setCheckinForNewReport(checkin);
+        setDepartureCommentForNewReport(lastDeparture?.departureComment);
         setShowModal(true);
     };
 
@@ -116,23 +127,24 @@ const ReturnReportManager: React.FC<ReturnReportManagerProps> = ({ allReports, a
         setShowModal(false);
         setEditingReport(null);
         setCheckinForNewReport(null);
+        setDepartureCommentForNewReport(undefined);
     };
 
     const renderIssueSummary = (report: ReturnReport) => {
         const issues: string[] = [];
         if (report.saturationLockers && report.saturationLockers.length > 0) {
-            issues.push(`Saturación (${report.saturationLockers.length})`);
+            issues.push(`Saturation (${report.saturationLockers.length})`);
         }
         if (report.livraisonsManquantes && report.livraisonsManquantes.length > 0) {
-            issues.push(`Faltante (${report.livraisonsManquantes.length})`);
+            issues.push(`Manquant (${report.livraisonsManquantes.length})`);
         }
         if (report.pudosApmFermes && report.pudosApmFermes.length > 0) {
-            issues.push(`Cerrado (${report.pudosApmFermes.length})`);
+            issues.push(`Fermé (${report.pudosApmFermes.length})`);
         }
         if (report.notes) {
-            issues.push('Notas');
+            issues.push('Notes');
         }
-        return issues.length > 0 ? issues.join(', ') : <span className="text-gray-400">Sin incidencias</span>;
+        return issues.length > 0 ? issues.join(', ') : <span className="text-gray-400">Aucun incident</span>;
     };
 
 
@@ -144,29 +156,30 @@ const ReturnReportManager: React.FC<ReturnReportManagerProps> = ({ allReports, a
                 onSave={handleSaveReport}
                 reportToEdit={editingReport}
                 checkinForNewReport={checkinForNewReport}
+                departureComment={departureCommentForNewReport}
             />
             <div className="bg-white p-6 rounded-lg shadow-md">
                 <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
-                    <h2 className="text-2xl font-bold text-gray-800">Estado de Reportes de Retorno (Hoy)</h2>
+                    <h2 className="text-2xl font-bold text-gray-800">État des Rapports de Retour (Aujourd'hui)</h2>
                     <button
                         onClick={handleExport}
                         className="bg-green-600 text-white px-5 py-2 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition-colors w-full sm:w-auto flex items-center justify-center"
                         disabled={allReports.length === 0}
                     >
                         <ExportExcelIcon />
-                        Exportar Excel
+                        Exporter Excel
                     </button>
                 </div>
 
                 <div className="mb-4">
-                    <label htmlFor="subcontractor-filter" className="block text-sm font-medium text-gray-700">Filtrar por Subcontratista (Soutretant):</label>
+                    <label htmlFor="subcontractor-filter" className="block text-sm font-medium text-gray-700">Filtrer par Sous-traitant :</label>
                     <select
                         id="subcontractor-filter"
                         value={filterSubcontractor}
                         onChange={(e) => setFilterSubcontractor(e.target.value)}
                         className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
                     >
-                        <option value="">Todos</option>
+                        <option value="">Tous</option>
                         {uniqueSubcontractors.map(sub => (
                             <option key={sub} value={sub}>{sub}</option>
                         ))}
@@ -177,12 +190,12 @@ const ReturnReportManager: React.FC<ReturnReportManagerProps> = ({ allReports, a
                      <table className="w-full text-sm text-left text-gray-500">
                          <thead className="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0">
                              <tr>
-                                 <th scope="col" className="px-6 py-3">Hora Retorno</th>
-                                 <th scope="col" className="px-6 py-3">Chofer</th>
-                                 <th scope="col" className="px-6 py-3">Subcontratista</th>
-                                 <th scope="col" className="px-6 py-3">Estado del Reporte</th>
-                                 <th scope="col" className="px-6 py-3">Resumen Incidencias</th>
-                                 <th scope="col" className="px-6 py-3 text-center">Acciones</th>
+                                 <th scope="col" className="px-6 py-3">Heure Retour</th>
+                                 <th scope="col" className="px-6 py-3">Chauffeur</th>
+                                 <th scope="col" className="px-6 py-3">Sous-traitant</th>
+                                 <th scope="col" className="px-6 py-3">État du Rapport</th>
+                                 <th scope="col" className="px-6 py-3">Résumé Incidents</th>
+                                 <th scope="col" className="px-6 py-3 text-center">Actions</th>
                              </tr>
                          </thead>
                          <tbody>
@@ -193,14 +206,14 @@ const ReturnReportManager: React.FC<ReturnReportManagerProps> = ({ allReports, a
 
                                 return (
                                 <tr key={checkinId} className="bg-white border-b hover:bg-gray-50">
-                                    <td className="px-6 py-4 font-medium text-gray-900">{checkin.timestamp.toLocaleTimeString('es-ES')}</td>
+                                    <td className="px-6 py-4 font-medium text-gray-900">{checkin.timestamp.toLocaleTimeString('fr-FR')}</td>
                                     <td className="px-6 py-4">{checkin.driver.name}</td>
                                     <td className="px-6 py-4">{checkin.driver.subcontractor}</td>
                                     <td className="px-6 py-4">
                                         <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
                                             hasReport ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
                                         }`}>
-                                            {hasReport ? 'Reportado' : 'Pendiente'}
+                                            {hasReport ? 'Rapporté' : 'En attente'}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4">{hasReport ? renderIssueSummary(report) : <span className="text-gray-400">---</span>}</td>
@@ -209,17 +222,17 @@ const ReturnReportManager: React.FC<ReturnReportManagerProps> = ({ allReports, a
                                             <button 
                                                 onClick={() => handleEditClick(report)} 
                                                 className="text-blue-600 hover:text-blue-800 inline-flex items-center text-sm font-medium"
-                                                title="Editar Reporte"
+                                                title="Modifier le Rapport"
                                             >
-                                                <EditIcon /> Editar
+                                                <EditIcon /> Modifier
                                             </button>
                                         ) : (
                                             <button 
                                                 onClick={() => handleCreateClick(checkin)} 
                                                 className="text-green-600 hover:text-green-800 inline-flex items-center text-sm font-medium"
-                                                title="Crear Reporte"
+                                                title="Créer le Rapport"
                                             >
-                                                <CreateIcon /> Crear
+                                                <CreateIcon /> Créer
                                             </button>
                                         )}
                                     </td>
@@ -228,7 +241,7 @@ const ReturnReportManager: React.FC<ReturnReportManagerProps> = ({ allReports, a
                             }) : (
                                 <tr>
                                     <td colSpan={6} className="text-center py-10 text-gray-500">
-                                        No hay fichajes de retorno para el filtro actual.
+                                        Aucun pointage de retour pour le filtre actuel.
                                     </td>
                                 </tr>
                             )}

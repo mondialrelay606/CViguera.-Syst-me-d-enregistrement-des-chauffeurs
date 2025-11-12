@@ -22,7 +22,7 @@ const ScanResult: React.FC<ScanResultProps> = ({ result }) => {
   if (result.status === ScanStatus.IDLE) {
     return (
         <div className="h-28 flex items-center justify-center text-gray-500 italic">
-            Esperando escaneo...
+            En attente de scan...
         </div>
     );
   }
@@ -38,7 +38,7 @@ const ScanResult: React.FC<ScanResultProps> = ({ result }) => {
       </div>
       <div>
         <p className={`text-lg font-semibold ${isSuccess ? 'text-green-800' : 'text-red-800'}`}>
-          {isSuccess ? 'Acceso Correcto' : 'Error en el Escaneo'}
+          {isSuccess ? 'Accès Autorisé' : 'Erreur de Scan'}
         </p>
         <p className={`${isSuccess ? 'text-green-700' : 'text-red-700'}`}>
           {result.message}

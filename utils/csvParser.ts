@@ -1,16 +1,16 @@
 import { Driver } from '../types';
 
 /**
- * Parsea el contenido de un string en formato CSV a un array de objetos Driver.
- * Espera que la primera línea sea la cabecera.
- * @param csvContent El contenido del archivo CSV como un string.
- * @returns Un array de objetos Driver.
- * @throws Error si el formato del CSV es incorrecto.
+ * Analyse le contenu d'une chaîne de caractères au format CSV en un tableau d'objets Driver.
+ * S'attend à ce que la première ligne soit l'en-tête.
+ * @param csvContent Le contenu du fichier CSV sous forme de chaîne de caractères.
+ * @returns Un tableau d'objets Driver.
+ * @throws Error si le format du CSV est incorrect.
  */
 export const parseDriversCSV = (csvContent: string): Driver[] => {
   const lines = csvContent.split(/\r\n|\n/).filter(line => line.trim() !== '');
   if (lines.length < 2) {
-    throw new Error('El archivo CSV debe contener al menos una cabecera y una fila de datos.');
+    throw new Error("Le fichier CSV doit contenir au moins un en-tête et une ligne de données.");
   }
 
   const header = lines[0].split(',').map(h => h.trim().toLowerCase());
@@ -21,7 +21,7 @@ export const parseDriversCSV = (csvContent: string): Driver[] => {
   requiredHeaders.forEach(reqHeader => {
       const index = header.indexOf(reqHeader);
       if (index === -1) {
-          throw new Error(`La cabecera del CSV no contiene la columna requerida: '${reqHeader}'. Las columnas esperadas son: ${requiredHeaders.join(', ')}`);
+          throw new Error(`L'en-tête du CSV ne contient pas la colonne requise : '${reqHeader}'. Les colonnes attendues sont : ${requiredHeaders.join(', ')}`);
       }
       headerIndices[reqHeader] = index;
   });
@@ -40,7 +40,7 @@ export const parseDriversCSV = (csvContent: string): Driver[] => {
             telephone: data[headerIndices['telephone']]?.trim() || '',
         };
 
-        // Asegurarse de que los campos esenciales no estén vacíos
+        // S'assurer que les champs essentiels ne sont pas vides
         if (driver.id && driver.name && driver.subcontractor) {
              drivers.push(driver);
         }

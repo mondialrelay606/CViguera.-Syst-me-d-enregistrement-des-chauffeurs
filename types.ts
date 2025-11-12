@@ -16,11 +16,12 @@ export interface CheckinRecord {
   driver: Driver;
   timestamp: Date;
   type: CheckinType;
-  hasUniform?: boolean; // Campo para el estado del uniforme
+  hasUniform?: boolean; // Champ pour l'état de la tenue
+  departureComment?: string; // Commentaire optionnel au départ
 }
 
 export enum PudoApmFermeReason {
-    CIERRE_SALVAJE = 'Cierre salvaje',
+    CIERRE_SALVAJE = 'Fermeture sauvage',
     PANNE = 'Panne',
 }
 

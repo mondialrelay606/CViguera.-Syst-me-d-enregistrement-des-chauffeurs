@@ -10,11 +10,11 @@ const Clock: React.FC = () => {
 
   return (
     <div className="text-center">
-      <p className="text-5xl md:text-6xl font-bold text-gray-800">
-        {time.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+      <p className="text-5xl md:text-6xl font-bold text-[#9c0058]">
+        {time.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
       </p>
       <p className="text-lg text-gray-500">
-        {time.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+        {time.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
       </p>
     </div>
   );

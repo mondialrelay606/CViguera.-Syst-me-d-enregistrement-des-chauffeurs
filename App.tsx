@@ -9,13 +9,13 @@ import AdminDashboard from './components/admin/AdminDashboard';
 import DriverList from './components/DriverList';
 
 // --- Constantes de la aplicación ---
-const ADMIN_PASSWORD = 'admin'; // En una app real, esto debería ser seguro.
+const ADMIN_PASSWORD = 'admin'; // Dans une application réelle, cela devrait être sécurisé.
 const CHECKIN_LOG_STORAGE_KEY = 'checkinLog';
 const RETURN_REPORTS_STORAGE_KEY = 'returnReports';
 
 
 /**
- * Comprueba si una fecha dada corresponde al día de hoy.
+ * Vérifie si une date donnée correspond à aujourd'hui.
  */
 const isToday = (someDate: Date): boolean => {
   const today = new Date();
@@ -48,7 +48,7 @@ const App: React.FC = () => {
                 timestamp: new Date(r.timestamp),
             })) : [];
         } catch (error) {
-            console.error("Error al cargar el registro de fichajes:", error);
+            console.error("Erreur lors du chargement de l'historique des pointages :", error);
             return [];
         }
     });
@@ -57,7 +57,7 @@ const App: React.FC = () => {
             const savedReports = localStorage.getItem(RETURN_REPORTS_STORAGE_KEY);
             return savedReports ? JSON.parse(savedReports) : [];
         } catch (error) {
-            console.error("Error al cargar los reportes de retorno:", error);
+            console.error("Erreur lors du chargement des rapports de retour :", error);
             return [];
         }
     });
@@ -78,8 +78,8 @@ const App: React.FC = () => {
                 const drivers = await driverService.fetchDrivers();
                 setAllDrivers(drivers);
             } catch (error) {
-                console.error("Error al cargar los choferes:", error);
-                setLastScanResult({ status: ScanStatus.ERROR, message: 'No se pudo cargar la lista de choferes.' });
+                console.error("Erreur lors du chargement des chauffeurs :", error);
+                setLastScanResult({ status: ScanStatus.ERROR, message: 'Impossible de charger la liste des chauffeurs.' });
             } finally {
                 setLoading(false);
             }
@@ -92,7 +92,7 @@ const App: React.FC = () => {
         try {
             localStorage.setItem(CHECKIN_LOG_STORAGE_KEY, JSON.stringify(checkinLog));
         } catch (error) {
-            console.error("Error al guardar el registro de fichajes:", error);
+            console.error("Erreur lors de la sauvegarde de l'historique des pointages :", error);
         }
     }, [checkinLog]);
 
@@ -100,7 +100,7 @@ const App: React.FC = () => {
         try {
             localStorage.setItem(RETURN_REPORTS_STORAGE_KEY, JSON.stringify(returnReports));
         } catch (error) {
-            console.error("Error al guardar los reportes de retorno:", error);
+            console.error("Erreur lors de la sauvegarde des rapports de retour :", error);
         }
     }, [returnReports]);
 
@@ -120,7 +120,7 @@ const App: React.FC = () => {
             if (checkinType === CheckinType.DEPARTURE && lastCheckinType === CheckinType.DEPARTURE) {
                 setLastScanResult({
                     status: ScanStatus.ERROR,
-                    message: `Error: ${foundDriver.name} ya tiene una salida registrada sin retorno. No puede fichar 'Départ' de nuevo.`
+                    message: `Erreur : ${foundDriver.name} a déjà un départ enregistré sans retour. Ne peut pas pointer 'Départ' à nouveau.`
                 });
                 setIdentifier('');
                 return;
@@ -129,7 +129,7 @@ const App: React.FC = () => {
             if (checkinType === CheckinType.RETURN && lastCheckinType !== CheckinType.DEPARTURE) {
                 setLastScanResult({
                     status: ScanStatus.ERROR,
-                    message: `Error: ${foundDriver.name} no puede fichar 'Retour' sin un 'Départ' previo hoy.`
+                    message: `Erreur : ${foundDriver.name} ne peut pas pointer 'Retour' sans un 'Départ' préalable aujourd'hui.`
                 });
                 setIdentifier('');
                 return;
@@ -141,20 +141,20 @@ const App: React.FC = () => {
                 type: checkinType,
             };
             
-            let successMessage = `[${checkinType}] ${foundDriver.name} fichado correctamente.`;
+            let successMessage = `[${checkinType}] ${foundDriver.name} pointage réussi.`;
             if (checkinType === CheckinType.DEPARTURE) {
                 newRecord.hasUniform = hasUniform;
-                successMessage = `[${checkinType}] ${foundDriver.name} fichado (Uniforme: ${hasUniform ? 'Sí' : 'No'}).`;
+                successMessage = `[${checkinType}] ${foundDriver.name} pointé (Tenue: ${hasUniform ? 'Oui' : 'Non'}).`;
             }
 
             setCheckinLog(prevLog => [newRecord, ...prevLog]);
             setLastScanResult({ status: ScanStatus.SUCCESS, message: successMessage });
         
         } else {
-            setLastScanResult({ status: ScanStatus.ERROR, message: `Identifiant "${identifier}" no encontrado. Verifique al chofer.` });
+            setLastScanResult({ status: ScanStatus.ERROR, message: `Identifiant "${identifier}" non trouvé. Veuillez vérifier le chauffeur.` });
         }
         setIdentifier('');
-        setHasUniform(true); // Resetear el checkbox a su estado por defecto para el siguiente fichaje
+        setHasUniform(true);
     };
 
     const handleAdminLogin = (password: string) => {
@@ -162,7 +162,7 @@ const App: React.FC = () => {
             setIsAdminView(true);
             setShowAdminLogin(false);
         } else {
-            alert('Contraseña incorrecta.');
+            alert('Mot de passe incorrect.');
         }
     };
     
@@ -175,9 +175,9 @@ const App: React.FC = () => {
         try {
             await driverService.updateDrivers(newDrivers);
             setAllDrivers(newDrivers);
-            alert('La lista de choferes ha sido actualizada correctamente.');
+            alert('La liste des chauffeurs a été mise à jour avec succès.');
         } catch (error) {
-            alert('Error al actualizar la lista de choferes.');
+            alert('Erreur lors de la mise à jour de la liste des chauffeurs.');
             console.error(error);
         }
     };
@@ -189,21 +189,33 @@ const App: React.FC = () => {
                 prevDrivers.map(d => d.id === updatedDriver.id ? updatedDriver : d)
             );
         } catch (error) {
-            alert('Error al actualizar el chofer.');
+            alert('Erreur lors de la mise à jour du chauffeur.');
             console.error(error);
         }
     };
+    
+    const handleUpdateCheckinComment = (checkinId: string, comment: string) => {
+        setCheckinLog(prevLog => {
+            return prevLog.map(record => {
+                const currentId = `${record.driver.id}-${record.timestamp.getTime()}`;
+                if (currentId === checkinId) {
+                    return { ...record, departureComment: comment };
+                }
+                return record;
+            });
+        });
+    };
 
     const handleDeleteDriver = async (driverId: string) => {
-        if (!window.confirm(`¿Está seguro de que desea eliminar al chofer con ID ${driverId}? Esta acción no se puede deshacer.`)) {
+        if (!window.confirm(`Êtes-vous sûr de vouloir supprimer le chauffeur avec l'ID ${driverId} ? Cette action est irréversible.`)) {
             return;
         }
         try {
             await driverService.deleteDriver(driverId);
             setAllDrivers(prevDrivers => prevDrivers.filter(d => d.id !== driverId));
-            alert('Chofer eliminado correctamente.');
+            alert('Chauffeur supprimé avec succès.');
         } catch (error) {
-            alert('Error al eliminar el chofer.');
+            alert('Erreur lors de la suppression du chauffeur.');
             console.error(error);
         }
     };
@@ -228,6 +240,7 @@ const App: React.FC = () => {
             onLogout={handleLogout} 
             onUpdateDrivers={handleUpdateDrivers}
             onUpdateSingleDriver={handleUpdateSingleDriver}
+            onUpdateCheckinComment={handleUpdateCheckinComment}
             onDeleteDriver={handleDeleteDriver}
             onAddReport={handleAddReport}
             onUpdateReport={handleUpdateReport}
@@ -244,15 +257,15 @@ const App: React.FC = () => {
             <div className="min-h-screen p-4 sm:p-6 lg:p-8 flex flex-col">
                 <header className="mb-6">
                     <div className="relative text-center">
-                        <h1 className="text-4xl font-bold text-gray-800">Sistema de Fichaje de Choferes</h1>
-                        <p className="text-lg text-gray-600">Registro de entradas por Identifiant</p>
+                        <h1 className="text-4xl font-bold text-[#9c0058]">Système de Pointage des Chauffeurs</h1>
+                        <p className="text-lg text-gray-600">Enregistrement des arrivées par Identifiant</p>
                         <button
                             onClick={() => setShowAdminLogin(true)}
                             className="absolute top-0 right-0 flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-all"
-                            aria-label="Acceso de administrador"
+                            aria-label="Accès administrateur"
                         >
                             <AdminIcon />
-                            <span>Administración</span>
+                            <span>Administration</span>
                         </button>
                     </div>
                 </header>
@@ -264,37 +277,37 @@ const App: React.FC = () => {
                             <div className="grid grid-cols-2 gap-4 mb-4">
                                 <button
                                     onClick={() => setCheckinType(CheckinType.DEPARTURE)}
-                                    className={`py-4 px-4 rounded-lg text-lg font-semibold transition-all duration-200 ${checkinType === CheckinType.DEPARTURE ? 'bg-blue-600 text-white shadow-lg scale-105' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                                    className={`py-4 px-4 rounded-lg text-lg font-semibold transition-all duration-200 ${checkinType === CheckinType.DEPARTURE ? 'bg-[#9c0058] text-white shadow-lg scale-105' : 'bg-gray-200 text-gray-700 hover:bg-fuchsia-100'}`}
                                 >
                                     {CheckinType.DEPARTURE}
                                 </button>
                                 <button
                                     onClick={() => setCheckinType(CheckinType.RETURN)}
-                                    className={`py-4 px-4 rounded-lg text-lg font-semibold transition-all duration-200 ${checkinType === CheckinType.RETURN ? 'bg-blue-600 text-white shadow-lg scale-105' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                                    className={`py-4 px-4 rounded-lg text-lg font-semibold transition-all duration-200 ${checkinType === CheckinType.RETURN ? 'bg-[#9c0058] text-white shadow-lg scale-105' : 'bg-gray-200 text-gray-700 hover:bg-fuchsia-100'}`}
                                 >
                                     {CheckinType.RETURN}
                                 </button>
                             </div>
                             
-                            {/* Checkbox para el uniforme, solo visible en 'Départ' */}
                             {checkinType === CheckinType.DEPARTURE && (
-                                <div className="flex items-center justify-center mb-4 p-2 bg-blue-50 rounded-lg">
+                                <div className="flex items-center justify-center mb-4 p-3 bg-fuchsia-50 rounded-lg">
                                     <input
                                         id="uniform-check"
                                         type="checkbox"
                                         checked={hasUniform}
                                         onChange={(e) => setHasUniform(e.target.checked)}
-                                        className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                        className="h-5 w-5 rounded border-gray-300 text-[#9c0058] focus:ring-[#9c0058]"
                                     />
                                     <label htmlFor="uniform-check" className="ml-3 text-base font-medium text-gray-800">
-                                        Lleva el uniforme
+                                        Porte la tenue
                                     </label>
                                 </div>
                             )}
 
+
                             <form onSubmit={handleScan}>
                                 <label htmlFor="identifier-input" className="block text-sm font-medium text-gray-700 mb-2 text-center">
-                                    Introduzca el Identifiant del chofer
+                                    Saisir l'Identifiant du chauffeur
                                 </label>
                                 <div className="relative">
                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -306,8 +319,8 @@ const App: React.FC = () => {
                                         type="text"
                                         value={identifier}
                                         onChange={(e) => setIdentifier(e.target.value)}
-                                        placeholder="Esperando Identifiant..."
-                                        className="w-full pl-14 pr-4 py-3 text-lg border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder="En attente de l'Identifiant..."
+                                        className="w-full pl-14 pr-4 py-3 text-lg border-gray-300 rounded-lg shadow-sm focus:ring-[#9c0058] focus:border-[#9c0058]"
                                         autoFocus
                                     />
                                 </div>
@@ -320,13 +333,16 @@ const App: React.FC = () => {
                      <div className="flex flex-col min-h-[500px]">
                          {loading ? (
                             <div className="flex items-center justify-center h-full bg-white rounded-lg shadow-md">
-                                <p className="text-gray-500">Cargando datos...</p>
+                                <p className="text-gray-500">Chargement des données...</p>
                             </div>
                         ) : (
                            <CheckinLog records={checkinLog} />
                         )}
                     </div>
                 </main>
+                <footer className="text-center py-4">
+                    <p className="text-xs text-gray-500">Développé par cviguera</p>
+                </footer>
             </div>
         </>
     );

@@ -1,7 +1,7 @@
 import { CheckinRecord, DailyStats, CheckinType } from '../types';
 
 /**
- * Comprueba si una fecha dada corresponde al día de hoy.
+ * Vérifie si une date donnée correspond à aujourd'hui.
  */
 const isToday = (someDate: Date): boolean => {
   const today = new Date();
@@ -11,7 +11,7 @@ const isToday = (someDate: Date): boolean => {
 };
 
 /**
- * Calcula las estadísticas clave para los fichajes de hoy.
+ * Calcule les statistiques clés pour les pointages d'aujourd'hui.
  */
 export const calculateDailyStats = (records: CheckinRecord[]): DailyStats => {
   const todayRecords = records.filter(r => isToday(r.timestamp));
@@ -28,7 +28,7 @@ export const calculateDailyStats = (records: CheckinRecord[]): DailyStats => {
 };
 
 /**
- * Genera la distribución de fichajes por hora para el día de hoy.
+ * Génère la distribution des pointages par heure pour aujourd'hui.
  */
 export const getHourlyDistribution = (records: CheckinRecord[]): number[] => {
     const todayRecords = records.filter(r => isToday(r.timestamp));
@@ -43,22 +43,22 @@ export const getHourlyDistribution = (records: CheckinRecord[]): number[] => {
 };
 
 /**
- * Obtiene los fichajes de salida de los choferes que aún no han regresado hoy.
+ * Récupère les pointages de départ des chauffeurs qui ne sont pas encore revenus aujourd'hui.
  */
 export const getPendingReturnCheckins = (records: CheckinRecord[]): CheckinRecord[] => {
     const todayRecords = records.filter(r => isToday(r.timestamp));
 
-    // Ordenamos los registros del día de más antiguo a más reciente
+    // Nous trions les enregistrements du jour du plus ancien au plus récent
     const sortedTodayRecords = todayRecords.slice().sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
 
-    // Usamos un mapa para registrar el último estado de cada chofer
+    // Nous utilisons une carte pour enregistrer le dernier état de chaque chauffeur
     const driverLastStatus: { [driverId: string]: { lastAction: CheckinType, record: CheckinRecord } } = {};
 
     for (const record of sortedTodayRecords) {
         driverLastStatus[record.driver.id] = { lastAction: record.type, record: record };
     }
 
-    // Filtramos para quedarnos solo con aquellos cuyo último estado es 'Départ'
+    // Nous filtrons pour ne garder que ceux dont le dernier état est 'Départ'
     const pendingDriversRecords: CheckinRecord[] = [];
     for (const driverId in driverLastStatus) {
         if (driverLastStatus[driverId].lastAction === CheckinType.DEPARTURE) {

@@ -23,7 +23,7 @@ const HourlyCheckinChart: React.FC<HourlyCheckinChartProps> = ({ data }) => {
                 y={y}
                 width={`${barWidth - 1}%`}
                 height={barHeight}
-                className="fill-current text-blue-500 hover:text-blue-700 transition-colors"
+                className="fill-current text-[#9c0058] hover:text-[#86004c] transition-colors"
               />
               <text
                 x={`${x + barWidth / 2}%`}

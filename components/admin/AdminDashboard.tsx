@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { CheckinRecord, DailyStats, Driver, CheckinType, ReturnReport } from '../../types';
-import { exportCheckinsToCSV } from '../../utils/csvExporter';
+import { exportCheckinsToExcel } from '../../utils/excelExporter';
 import { parseDriversCSV } from '../../utils/csvParser';
 import { calculateDailyStats, getPendingReturnCheckins } from '../../utils/reporting';
 import SummaryCard from './SummaryCard';
@@ -15,6 +15,7 @@ interface AdminDashboardProps {
   onLogout: () => void;
   onUpdateDrivers: (newDrivers: Driver[]) => void;
   onUpdateSingleDriver: (driver: Driver) => void;
+  onUpdateCheckinComment: (checkinId: string, comment: string) => void;
   onDeleteDriver: (driverId: string) => void;
   onAddReport: (newReport: ReturnReport) => void;
   onUpdateReport: (updatedReport: ReturnReport) => void;
@@ -26,9 +27,31 @@ const LogoutIcon = () => (
     </svg>
 );
 
-const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers, allReports, onLogout, onUpdateDrivers, onUpdateSingleDriver, onDeleteDriver, onAddReport, onUpdateReport }) => {
+const ExportExcelIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3.375 21v-7.5h17.25V21H3.375Z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3.375 13.5v-7.5A2.25 2.25 0 0 1 5.625 3.75h12.75c1.24 0 2.25 1.01 2.25 2.25v7.5" />
+    </svg>
+);
+
+const AddCommentIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-green-600 hover:text-green-800">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+    </svg>
+);
+
+const EditCommentIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-blue-600 hover:text-blue-800">
+        <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+    </svg>
+);
+
+
+const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers, allReports, onLogout, onUpdateDrivers, onUpdateSingleDriver, onUpdateCheckinComment, onDeleteDriver, onAddReport, onUpdateReport }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'stats' | 'drivers' | 'reports'>('stats');
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [commentText, setCommentText] = useState('');
 
   const dailyStats = useMemo(() => calculateDailyStats(allRecords), [allRecords]);
   const pendingReturns = useMemo(() => getPendingReturnCheckins(allRecords), [allRecords]);
@@ -38,14 +61,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers,
     if (!searchTerm.trim()) return allRecords;
     const lowercasedFilter = searchTerm.toLowerCase();
     return allRecords.filter(record => {
-      const uniformText = record.type === CheckinType.DEPARTURE ? (record.hasUniform ? 'sí' : 'no') : '';
+      const uniformText = record.type === CheckinType.DEPARTURE ? (record.hasUniform ? 'oui' : 'non') : '';
       return record.driver.name.toLowerCase().includes(lowercasedFilter) ||
         record.driver.subcontractor.toLowerCase().includes(lowercasedFilter) ||
         record.driver.tour.toLowerCase().includes(lowercasedFilter) ||
         record.driver.telephone.toLowerCase().includes(lowercasedFilter) ||
-        record.timestamp.toLocaleString('es-ES').includes(lowercasedFilter) ||
+        record.timestamp.toLocaleString('fr-FR').includes(lowercasedFilter) ||
         record.type.toLowerCase().includes(lowercasedFilter) ||
-        uniformText.includes(lowercasedFilter);
+        uniformText.includes(lowercasedFilter) ||
+        (record.departureComment && record.departureComment.toLowerCase().includes(lowercasedFilter));
     });
   }, [allRecords, searchTerm]);
 
@@ -61,27 +85,46 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers,
             if (newDrivers.length > 0) {
                 onUpdateDrivers(newDrivers);
             } else {
-                alert("El archivo CSV está vacío o tiene un formato incorrecto.");
+                alert("Le fichier CSV est vide ou son format est incorrect.");
             }
         } catch (error) {
-            console.error("Error al parsear el CSV:", error);
-            alert(`Error al procesar el archivo: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+            console.error("Erreur lors de l'analyse du CSV :", error);
+            alert(`Erreur lors du traitement du fichier : ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
         }
     };
     reader.readAsText(file);
     event.target.value = '';
   };
 
+  const handleEditCommentClick = (record: CheckinRecord) => {
+    const checkinId = `${record.driver.id}-${record.timestamp.getTime()}`;
+    setEditingCommentId(checkinId);
+    setCommentText(record.departureComment || '');
+  };
+
+  const handleSaveComment = () => {
+    if (editingCommentId) {
+      onUpdateCheckinComment(editingCommentId, commentText);
+      setEditingCommentId(null);
+      setCommentText('');
+    }
+  };
+
+  const handleCancelEditComment = () => {
+    setEditingCommentId(null);
+    setCommentText('');
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
       <header className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">Panel de Administración</h1>
+        <h1 className="text-3xl font-bold text-gray-800">Tableau de Bord Administration</h1>
         <button
           onClick={onLogout}
           className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 flex items-center transition-colors"
         >
           <LogoutIcon />
-          Volver al Kiosko
+          Retour au Kiosque
         </button>
       </header>
       
@@ -89,21 +132,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers,
           <nav className="-mb-px flex space-x-8" aria-label="Tabs">
               <button
                   onClick={() => setActiveTab('stats')}
-                  className={`${activeTab === 'stats' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg`}
+                  className={`${activeTab === 'stats' ? 'border-[#9c0058] text-[#9c0058]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg`}
               >
-                  Estadísticas y Fichajes
+                  Statistiques et Pointages
               </button>
                <button
                   onClick={() => setActiveTab('reports')}
-                  className={`${activeTab === 'reports' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg`}
+                  className={`${activeTab === 'reports' ? 'border-[#9c0058] text-[#9c0058]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg`}
               >
-                  Reportes de Retorno
+                  Rapports de Retour
               </button>
               <button
                   onClick={() => setActiveTab('drivers')}
-                  className={`${activeTab === 'drivers' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg`}
+                  className={`${activeTab === 'drivers' ? 'border-[#9c0058] text-[#9c0058]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg`}
               >
-                  Gestión de Choferes
+                  Gestion des Chauffeurs
               </button>
           </nav>
       </div>
@@ -111,8 +154,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers,
       <main>
         <div className={activeTab === 'stats' ? 'block' : 'hidden'}>
             <section className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              <SummaryCard title="Fichajes Totales (Hoy)" value={dailyStats.totalCheckins.toString()} />
-              <SummaryCard title="Choferes Únicos (Hoy)" value={dailyStats.uniqueDrivers.toString()} />
+              <SummaryCard title="Pointages Totaux (Aujourd'hui)" value={dailyStats.totalCheckins.toString()} />
+              <SummaryCard title="Chauffeurs Uniques (Aujourd'hui)" value={dailyStats.uniqueDrivers.toString()} />
             </section>
 
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
@@ -121,63 +164,96 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers,
               </div>
               <div className="xl:col-span-2 bg-white p-6 rounded-lg shadow-md flex flex-col">
                 <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
-                  <h2 className="text-xl font-bold text-gray-700">Historial de Fichajes ({filteredRecords.length})</h2>
+                  <h2 className="text-xl font-bold text-gray-700">Historique des Pointages ({filteredRecords.length})</h2>
                   <button
-                    onClick={() => exportCheckinsToCSV(allRecords, `historial_fichajes_${new Date().toISOString().split('T')[0]}.csv`)}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 flex items-center transition-colors w-full sm:w-auto"
+                    onClick={() => exportCheckinsToExcel(allRecords, `historial_fichajes_${new Date().toISOString().split('T')[0]}.xlsx`)}
+                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 flex items-center transition-colors w-full sm:w-auto"
                     disabled={allRecords.length === 0}
                   >
-                    Exportar Historial
+                    <ExportExcelIcon />
+                    Exporter vers Excel
                   </button>
                 </div>
                 <div className="mb-4">
                     <input
                         type="text"
-                        placeholder="Buscar por nombre, subcontratista, tournée, teléfono..."
+                        placeholder="Rechercher par nom, sous-traitant, tournée, téléphone, commentaire..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-[#9c0058] focus:border-[#9c0058]"
                     />
                 </div>
                 <div className="flex-grow overflow-y-auto h-96">
                     <table className="w-full text-sm text-left text-gray-500">
                         <thead className="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0">
                             <tr>
-                                <th scope="col" className="px-6 py-3">Fecha y Hora</th>
-                                <th scope="col" className="px-6 py-3">Nombre</th>
-                                <th scope="col" className="px-6 py-3">Subcontratista</th>
+                                <th scope="col" className="px-6 py-3">Date et Heure</th>
+                                <th scope="col" className="px-6 py-3">Nom</th>
+                                <th scope="col" className="px-6 py-3">Sous-traitant</th>
                                 <th scope="col" className="px-6 py-3">Tournée</th>
-                                <th scope="col" className="px-6 py-3">Tipo</th>
-                                <th scope="col" className="px-6 py-3">Uniforme</th>
+                                <th scope="col" className="px-6 py-3">Type</th>
+                                <th scope="col" className="px-6 py-3">Tenue</th>
+                                <th scope="col" className="px-6 py-3">Commentaire</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredRecords.map((record, index) => (
-                            <tr key={index} className="bg-white border-b hover:bg-gray-50">
-                                <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
-                                    {record.timestamp.toLocaleString('es-ES')}
-                                </td>
-                                <td className="px-6 py-4">{record.driver.name}</td>
-                                <td className="px-6 py-4">{record.driver.subcontractor}</td>
-                                <td className="px-6 py-4">{record.driver.tour}</td>
-                                <td className="px-6 py-4">
-                                  <span className={`px-2 py-1 text-xs font-semibold rounded-full ${ record.type === CheckinType.DEPARTURE ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800' }`}>
-                                        {record.type}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4">
-                                    {record.type === CheckinType.DEPARTURE
-                                        ? (record.hasUniform ? 'Sí' : 'No')
-                                        : <span className="text-gray-400">N/A</span>
-                                    }
-                                </td>
-                            </tr>
-                            ))}
+                            {filteredRecords.map((record) => {
+                                const checkinId = `${record.driver.id}-${record.timestamp.getTime()}`;
+                                const isEditingComment = editingCommentId === checkinId;
+
+                                return (
+                                <tr key={checkinId} className="bg-white border-b hover:bg-gray-50">
+                                    <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
+                                        {record.timestamp.toLocaleString('fr-FR')}
+                                    </td>
+                                    <td className="px-6 py-4">{record.driver.name}</td>
+                                    <td className="px-6 py-4">{record.driver.subcontractor}</td>
+                                    <td className="px-6 py-4">{record.driver.tour}</td>
+                                    <td className="px-6 py-4">
+                                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${ record.type === CheckinType.DEPARTURE ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800' }`}>
+                                            {record.type}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        {record.type === CheckinType.DEPARTURE
+                                            ? (record.hasUniform ? 'Oui' : 'Non')
+                                            : <span className="text-gray-400">N/A</span>
+                                        }
+                                    </td>
+                                    <td className="px-6 py-4 text-xs text-gray-600">
+                                      {isEditingComment ? (
+                                        <div className="flex flex-col gap-2">
+                                            <textarea 
+                                                value={commentText} 
+                                                onChange={(e) => setCommentText(e.target.value)}
+                                                className="w-full p-1 border rounded"
+                                                rows={2}
+                                                autoFocus
+                                            />
+                                            <div className="flex gap-2">
+                                                <button onClick={handleSaveComment} className="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700">Enregistrer</button>
+                                                <button onClick={handleCancelEditComment} className="text-xs bg-gray-500 text-white px-2 py-1 rounded hover:bg-gray-600">Annuler</button>
+                                            </div>
+                                        </div>
+                                      ) : (
+                                        <div className="flex items-center gap-2">
+                                            <span className="max-w-[180px] truncate" title={record.departureComment}>{record.departureComment || (record.type === CheckinType.DEPARTURE ? '' : <span className="text-gray-400">---</span>)}</span>
+                                            {record.type === CheckinType.DEPARTURE && (
+                                                <button onClick={() => handleEditCommentClick(record)} title={record.departureComment ? 'Modifier le Commentaire' : 'Ajouter un Commentaire'}>
+                                                    {record.departureComment ? <EditCommentIcon /> : <AddCommentIcon />}
+                                                </button>
+                                            )}
+                                        </div>
+                                      )}
+                                    </td>
+                                </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                     {filteredRecords.length === 0 && (
                         <div className="text-center py-8 text-gray-500">
-                            <p>No se encontraron registros que coincidan con la búsqueda.</p>
+                            <p>Aucun enregistrement correspondant à la recherche n'a été trouvé.</p>
                         </div>
                     )}
                 </div>
@@ -197,15 +273,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers,
 
         <div className={activeTab === 'drivers' ? 'block' : 'hidden'}>
             <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-                <h2 className="text-xl font-bold text-gray-700 mb-4">Actualizar Lista de Choferes</h2>
+                <h2 className="text-xl font-bold text-gray-700 mb-4">Mettre à Jour la Liste des Chauffeurs</h2>
                 <p className="text-sm text-gray-600 mb-4">
-                    Sube un archivo en formato CSV para reemplazar la lista actual. El archivo debe tener las columnas: <code className="bg-gray-200 text-sm p-1 rounded">Nom,Sous-traitant,Plaque,Tournée,Identifiant,telephone</code>.
+                    Téléchargez un fichier au format CSV pour remplacer la liste actuelle. Le fichier doit contenir les colonnes : <code className="bg-gray-200 text-sm p-1 rounded">Nom,Sous-traitant,Plaque,Tournée,Identifiant,telephone</code>.
                 </p>
                 <input
                     type="file"
                     accept=".csv"
                     onChange={handleFileUpload}
-                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-fuchsia-50 file:text-[#9c0058] hover:file:bg-fuchsia-100"
                 />
             </div>
             <div className="h-[600px]">
