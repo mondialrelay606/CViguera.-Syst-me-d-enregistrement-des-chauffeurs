@@ -12,6 +12,17 @@ import DriverList from './components/DriverList';
 const ADMIN_PASSWORD = 'admin'; // En una app real, esto debería ser seguro.
 const CHECKIN_LOG_STORAGE_KEY = 'checkinLog';
 
+/**
+ * Comprueba si una fecha dada corresponde al día de hoy.
+ */
+const isToday = (someDate: Date): boolean => {
+  const today = new Date();
+  return someDate.getDate() === today.getDate() &&
+    someDate.getMonth() === today.getMonth() &&
+    someDate.getFullYear() === today.getFullYear();
+};
+
+
 const BarcodeIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8 text-gray-400">
         <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 4.5A.75.75 0 0 1 4.5 3.75h15a.75.75 0 0 1 .75.75v15a.75.75 0 0 1-.75.75h-15a.75.75 0 0 1-.75-.75v-15Zm.75 0v15h13.5v-15h-13.5ZM8.25 6h.75v12h-.75V6Zm2.25 0h.75v12h-.75V6Zm2.25 0h.75v12h-.75V6Zm2.25 0h.75v12h-.75V6Z" />
@@ -78,13 +89,42 @@ const App: React.FC = () => {
         const foundDriver = allDrivers.find(driver => driver.id === barcode.trim());
 
         if (foundDriver) {
+            // Encuentra todos los fichajes de este chofer hoy, ordenados del más nuevo al más antiguo.
+            const driverCheckinsToday = checkinLog
+                .filter(record => record.driver.id === foundDriver.id && isToday(record.timestamp))
+                .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+            
+            const lastCheckinType = driverCheckinsToday.length > 0 ? driverCheckinsToday[0].type : null;
+
+            // Regla 1: No se puede FICHAR SALIDA si la última acción fue una SALIDA.
+            if (checkinType === CheckinType.DEPARTURE && lastCheckinType === CheckinType.DEPARTURE) {
+                setLastScanResult({
+                    status: ScanStatus.ERROR,
+                    message: `Error: ${foundDriver.name} ya tiene una salida registrada sin retorno. No puede fichar 'Départ' de nuevo.`
+                });
+                setBarcode('');
+                return;
+            }
+
+            // Regla 2: No se puede FICHAR RETORNO si no hubo una SALIDA previa.
+            if (checkinType === CheckinType.RETURN && lastCheckinType !== CheckinType.DEPARTURE) {
+                setLastScanResult({
+                    status: ScanStatus.ERROR,
+                    message: `Error: ${foundDriver.name} no puede fichar 'Retour' sin un 'Départ' previo hoy.`
+                });
+                setBarcode('');
+                return;
+            }
+
+            // Si todas las validaciones pasan, se crea el nuevo registro.
             const newRecord: CheckinRecord = {
                 driver: foundDriver,
                 timestamp: new Date(),
                 type: checkinType,
             };
             setCheckinLog(prevLog => [newRecord, ...prevLog]);
-            setLastScanResult({ status: ScanStatus.SUCCESS, message: `[${checkinType}] Bienvenido, ${foundDriver.name} de ${foundDriver.company}.` });
+            setLastScanResult({ status: ScanStatus.SUCCESS, message: `[${checkinType}] ${foundDriver.name} fichado correctamente.` });
+        
         } else {
             setLastScanResult({ status: ScanStatus.ERROR, message: `Código de barras "${barcode}" no encontrado. Verifique al chofer.` });
         }
