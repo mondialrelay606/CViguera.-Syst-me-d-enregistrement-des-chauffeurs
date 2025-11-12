@@ -91,7 +91,7 @@ export const exportReportToCSV = (records: ReportRow[], t: Translator, filename:
     record.uniformVerified,
   ].map(escapeCsvField));
 
-  let csvContent = "data:text/csv;charset=utf-t,\uFEFF" // BOM para Excel
+  let csvContent = "data:text/csv;charset=utf-8,\uFEFF" // BOM para Excel
     + headers.join(',') + '\n'
     + rows.map(e => e.join(',')).join('\n');
 
