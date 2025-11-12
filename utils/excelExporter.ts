@@ -5,7 +5,128 @@ declare var XLSX: any;
 declare var saveAs: any;
 
 /**
+ * Crea una hoja de cálculo de "Tableau de Bord" con resúmenes y estadísticas.
+ */
+const createDashboardSheet = (reports: ReturnReport[]): any => {
+    if (reports.length === 0) {
+        const ws = XLSX.utils.aoa_to_sheet([["Aucun rapport à analyser."]]);
+        return ws;
+    }
+
+    // --- 1. Procesamiento de Datos ---
+
+    // Resumen de Incidentes por Tipo
+    const incidentTypes = { saturation: 0, manquantes: 0, fermes: 0 };
+    reports.forEach(r => {
+        incidentTypes.saturation += r.saturationLockers?.length || 0;
+        incidentTypes.manquantes += r.livraisonsManquantes?.length || 0;
+        incidentTypes.fermes += r.pudosApmFermes?.length || 0;
+    });
+    const incidentTypeData = [
+        ["Type d'Incident", "Nombre"],
+        ["Saturation Casier", incidentTypes.saturation],
+        ["Livraison Manquante", incidentTypes.manquantes],
+        ["PUDO/APM Fermé", incidentTypes.fermes],
+    ];
+
+    // Resumen de Incidentes por Sous-traitant
+    const incidentsBySub: { [key: string]: number } = {};
+    reports.forEach(r => {
+        const incidentCount = (r.saturationLockers?.length || 0) + (r.livraisonsManquantes?.length || 0) + (r.pudosApmFermes?.length || 0);
+        if (incidentCount > 0) {
+            incidentsBySub[r.subcontractor] = (incidentsBySub[r.subcontractor] || 0) + incidentCount;
+        }
+    });
+    const incidentsBySubData = [
+        ["Sous-traitant", "Nombre d'Incidents"],
+        ...Object.entries(incidentsBySub).sort((a, b) => b[1] - a[1])
+    ];
+
+    // Resumen de Conformité Lettre de Voiture
+    const totalReports = reports.length;
+    const tamponOui = reports.filter(r => r.lettreDeVoiture.tamponDuRelais).length;
+    const horaireOui = reports.filter(r => r.lettreDeVoiture.horaireDePassageLocker).length;
+    const complianceData = [
+        ["Item", "Oui", "Non", "% Conformité"],
+        ["Tampon du Relais", tamponOui, totalReports - tamponOui, totalReports > 0 ? `${((tamponOui / totalReports) * 100).toFixed(1)}%` : 'N/A'],
+        ["Horaire de Passage", horaireOui, totalReports - horaireOui, totalReports > 0 ? `${((horaireOui / totalReports) * 100).toFixed(1)}%` : 'N/A'],
+    ];
+
+    // Top 5 PUDOs/Casiers problématiques
+    const pudoCounts: { [key: string]: number } = {};
+    reports.forEach(r => {
+        (r.saturationLockers || []).forEach(item => { pudoCounts[item.lockerName] = (pudoCounts[item.lockerName] || 0) + 1; });
+        (r.livraisonsManquantes || []).forEach(item => { pudoCounts[item.pudoApmName] = (pudoCounts[item.pudoApmName] || 0) + 1; });
+        (r.pudosApmFermes || []).forEach(item => { pudoCounts[item.pudoApmName] = (pudoCounts[item.pudoApmName] || 0) + 1; });
+    });
+    const topPudosData = [
+        ["PUDO / Casier", "Nombre de Rapports"],
+        ...Object.entries(pudoCounts).sort((a, b) => b[1] - a[1]).slice(0, 5)
+    ];
+    
+    // Total Sacs/Vracs
+    let totalSacs = 0, totalVracs = 0;
+    reports.forEach(r => {
+        (r.saturationLockers || []).forEach(i => { totalSacs += i.sacs; totalVracs += i.vracs; });
+        (r.livraisonsManquantes || []).forEach(i => { totalSacs += i.sacs; totalVracs += i.vracs; });
+    });
+    const sacsVracsData = [ ["Article", "Total"], ["Sacs", totalSacs], ["Vracs", totalVracs] ];
+
+    // --- 2. Création de la Feuille de Calcul ---
+    const ws = XLSX.utils.aoa_to_sheet([["Tableau de Bord des Rapports de Retour"]]);
+    XLSX.utils.sheet_add_aoa(ws, [["Résumé des Incidents par Type"]], { origin: 'A3' });
+    XLSX.utils.sheet_add_aoa(ws, incidentTypeData, { origin: 'A4' });
+    XLSX.utils.sheet_add_aoa(ws, [["Conformité Lettre de Voiture"]], { origin: 'D3' });
+    XLSX.utils.sheet_add_aoa(ws, complianceData, { origin: 'D4' });
+    XLSX.utils.sheet_add_aoa(ws, [["Total des Articles Signalés"]], { origin: 'A9' });
+    XLSX.utils.sheet_add_aoa(ws, sacsVracsData, { origin: 'A10' });
+    XLSX.utils.sheet_add_aoa(ws, [["Incidents par Sous-traitant"]], { origin: 'A15' });
+    XLSX.utils.sheet_add_aoa(ws, incidentsBySubData, { origin: 'A16' });
+    XLSX.utils.sheet_add_aoa(ws, [["Top 5 PUDOs/Casiers avec Incidents"]], { origin: 'D15' });
+    XLSX.utils.sheet_add_aoa(ws, topPudosData, { origin: 'D16' });
+
+    // --- 3. Style et Formatage ---
+    const titleStyle = { font: { sz: 18, bold: true, color: { rgb: "FF9c0058" } }, alignment: { horizontal: "center" } };
+    const sectionTitleStyle = { font: { sz: 14, bold: true, color: { rgb: "FF4F81BD" } } };
+    const headerStyle = { font: { bold: true, color: { rgb: "FF333333" } }, fill: { fgColor: { rgb: "FFDDEBF7" } }, border: { bottom: { style: "thin" } } };
+    const cellBorder = { border: { top: { style: "thin", color: { rgb: "FFCCCCCC" } }, bottom: { style: "thin", color: { rgb: "FFCCCCCC" } }, left: { style: "thin", color: { rgb: "FFCCCCCC" } }, right: { style: "thin", color: { rgb: "FFCCCCCC" } } } };
+
+    ws['A1'].s = titleStyle;
+    ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 7 } }];
+
+    const sections = ['A3', 'D3', 'A9', 'A15', 'D15'];
+    sections.forEach(cell => { if(ws[cell]) ws[cell].s = sectionTitleStyle; });
+    
+    const applyTableStyle = (origin: string, data: any[][]) => {
+        const start = XLSX.utils.decode_cell(origin);
+        for (let r = 0; r < data.length; r++) {
+            for (let c = 0; c < data[0].length; c++) {
+                const cell = ws[XLSX.utils.encode_cell({ r: start.r + r, c: start.c + c })];
+                if (cell) {
+                    cell.s = r === 0 ? headerStyle : { ...cell.s, ...cellBorder };
+                }
+            }
+        }
+    };
+    applyTableStyle('A4', incidentTypeData);
+    applyTableStyle('D4', complianceData);
+    applyTableStyle('A10', sacsVracsData);
+    applyTableStyle('A16', incidentsBySubData);
+    applyTableStyle('D16', topPudosData);
+
+    // Auto-ajustement des largeurs de colonnes
+    const colWidths = [
+      {wch: 25}, {wch: 10}, {wch: 5}, {wch: 25}, {wch: 10}, {wch: 10}, {wch: 15}
+    ];
+    ws['!cols'] = colWidths;
+    
+    return ws;
+};
+
+
+/**
  * Exporta una lista de reportes a un archivo Excel (.xlsx) con formato.
+ * Ahora incluye una hoja de datos brutos y una hoja de tableau de bord.
  * @param reports - La lista de reportes a exportar.
  * @param filename - El nombre del archivo .xlsx a generar.
  */
@@ -15,92 +136,47 @@ export const exportReportsToExcel = (reports: ReturnReport[], filename: string =
         return;
     }
 
-    const headers = [
-        'Date Rapport', 
-        'Nom Chauffeur', 
-        'Sous-traitant', 
-        'Lettre de Voiture - Tampon', 
-        'Lettre de Voiture - Horaire', 
-        'Type Incident', 
-        'Détail (Casier/PUDO)', 
-        'Raison Fermeture', 
-        'Nº Sacs', 
-        'Nº Vracs',
-        'Notes Supplémentaires'
-    ];
-    
+    const wb = XLSX.utils.book_new();
+
+    // --- Feuille 1: Données Brutes ---
+    const headers = [ 'Date Rapport', 'Nom Chauffeur', 'Sous-traitant', 'Lettre de Voiture - Tampon', 'Lettre de Voiture - Horaire', 'Type Incident', 'Détail (Casier/PUDO)', 'Raison Fermeture', 'Nº Sacs', 'Nº Vracs', 'Notes Supplémentaires' ];
     const data: any[][] = [];
-
     for (const report of reports) {
-        const baseRow = [
-            new Date(report.reportDate).toLocaleString('fr-FR'),
-            report.driverName,
-            report.subcontractor,
-            report.lettreDeVoiture.tamponDuRelais ? 'Oui' : 'Non',
-            report.lettreDeVoiture.horaireDePassageLocker ? 'Oui' : 'Non',
-        ];
-        
+        const baseRow = [ new Date(report.reportDate).toLocaleString('fr-FR'), report.driverName, report.subcontractor, report.lettreDeVoiture.tamponDuRelais ? 'Oui' : 'Non', report.lettreDeVoiture.horaireDePassageLocker ? 'Oui' : 'Non', ];
         let hasIncidents = false;
-        const notes = report.notes || ''; // Usar notas en la primera línea de incidencia de un reporte
-
-        (report.saturationLockers || []).forEach((item, index) => {
-            data.push([...baseRow, 'Saturation Casier', item.lockerName, '', item.sacs, item.vracs, index === 0 ? notes : '']);
-            hasIncidents = true;
-        });
-
-        (report.livraisonsManquantes || []).forEach((item, index) => {
-            data.push([...baseRow, 'Livraison Manquante', item.pudoApmName, '', item.sacs, item.vracs, !hasIncidents && index === 0 ? notes : '']);
-            hasIncidents = true;
-        });
-
-        (report.pudosApmFermes || []).forEach((item, index) => {
-            data.push([...baseRow, 'PUDO/APM Fermé', item.pudoApmName, item.reason, '', '', !hasIncidents && index === 0 ? notes : '']);
-            hasIncidents = true;
-        });
-        
-        if (!hasIncidents) {
-             data.push([...baseRow, 'Aucun Incident', '', '', '', '', notes]);
-        }
+        const notes = report.notes || '';
+        (report.saturationLockers || []).forEach((item, index) => { data.push([...baseRow, 'Saturation Casier', item.lockerName, '', item.sacs, item.vracs, index === 0 ? notes : '']); hasIncidents = true; });
+        (report.livraisonsManquantes || []).forEach((item, index) => { data.push([...baseRow, 'Livraison Manquante', item.pudoApmName, '', item.sacs, item.vracs, !hasIncidents && index === 0 ? notes : '']); hasIncidents = true; });
+        (report.pudosApmFermes || []).forEach((item, index) => { data.push([...baseRow, 'PUDO/APM Fermé', item.pudoApmName, item.reason, '', '', !hasIncidents && index === 0 ? notes : '']); hasIncidents = true; });
+        if (!hasIncidents) { data.push([...baseRow, 'Aucun Incident', '', '', '', '', notes]); }
     }
-    
-    // Crear la hoja de cálculo
-    const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
-
-    // --- Aplicar Formato ---
-    const headerStyle = {
-        fill: { fgColor: { rgb: "FF4F81BD" } },
-        font: { color: { rgb: "FFFFFFFF" }, bold: true, sz: 12 },
-        alignment: { horizontal: "center", vertical: "center" }
-    };
-
-    const colWidths = headers.map((_, i) => ({
-        wch: Math.max(
-            headers[i].length,
-            ...data.map(row => (row[i] ? String(row[i]).length : 0))
-        ) + 2
-    }));
-    ws['!cols'] = colWidths;
-
-    const headerRange = XLSX.utils.decode_range(ws['!ref']);
+    const ws_data = XLSX.utils.aoa_to_sheet([headers, ...data]);
+    const headerStyle = { fill: { fgColor: { rgb: "FF4F81BD" } }, font: { color: { rgb: "FFFFFFFF" }, bold: true, sz: 12 }, alignment: { horizontal: "center", vertical: "center" } };
+    const colWidths = headers.map((_, i) => ({ wch: Math.max(headers[i].length, ...data.map(row => (row[i] ? String(row[i]).length : 0))) + 2 }));
+    ws_data['!cols'] = colWidths;
+    const headerRange = XLSX.utils.decode_range(ws_data['!ref']);
     for (let C = headerRange.s.c; C <= headerRange.e.c; ++C) {
         const address = XLSX.utils.encode_cell({ r: 0, c: C });
-        if (!ws[address]) continue;
-        ws[address].s = headerStyle;
+        if (ws_data[address]) ws_data[address].s = headerStyle;
     }
+    XLSX.utils.book_append_sheet(wb, ws_data, 'Données Brutes');
 
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Rapports');
+    // --- Feuille 2: Tableau de Bord ---
+    const ws_dashboard = createDashboardSheet(reports);
+    XLSX.utils.book_append_sheet(wb, ws_dashboard, 'Tableau de Bord');
+
+
+    // --- Génération du Fichier ---
     const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
-
     function s2ab(s: string) {
         const buf = new ArrayBuffer(s.length);
         const view = new Uint8Array(buf);
         for (let i = 0; i < s.length; i++) view[i] = s.charCodeAt(i) & 0xFF;
         return buf;
     }
-
     saveAs(new Blob([s2ab(wbout)], { type: "application/octet-stream" }), filename);
 };
+
 
 /**
  * Exporta los registros de fichaje a un archivo Excel (.xlsx) con formato.
