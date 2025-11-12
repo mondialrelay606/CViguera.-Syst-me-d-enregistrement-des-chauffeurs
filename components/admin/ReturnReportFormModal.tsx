@@ -182,8 +182,14 @@ const ReturnReportFormModal: React.FC<ReturnReportFormModalProps> = ({ isOpen, o
                                     </div>
                                     <input type="text" placeholder="Nom du Casier" value={item.lockerName} onChange={e => handleListChange('saturationLockers', item.id, 'lockerName', e.target.value)} className="w-full p-2 border rounded-md" required />
                                     <div className="grid grid-cols-2 gap-4">
-                                        <input type="number" placeholder="Nº Sacs" value={item.sacs} onChange={e => handleListChange('saturationLockers', item.id, 'sacs', parseInt(e.target.value) || 0)} min="0" className="w-full p-2 border rounded-md" />
-                                        <input type="number" placeholder="Nº Vracs" value={item.vracs} onChange={e => handleListChange('saturationLockers', item.id, 'vracs', parseInt(e.target.value) || 0)} min="0" className="w-full p-2 border rounded-md" />
+                                        <div>
+                                            <label className="block text-xs font-medium text-gray-600 mb-1">Sacs</label>
+                                            <input type="number" placeholder="Nº" value={item.sacs} onChange={e => handleListChange('saturationLockers', item.id, 'sacs', parseInt(e.target.value) || 0)} min="0" className="w-full p-2 border rounded-md" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-medium text-gray-600 mb-1">Vracs</label>
+                                            <input type="number" placeholder="Nº" value={item.vracs} onChange={e => handleListChange('saturationLockers', item.id, 'vracs', parseInt(e.target.value) || 0)} min="0" className="w-full p-2 border rounded-md" />
+                                        </div>
                                     </div>
                                 </div>
                             ))}
@@ -201,8 +207,14 @@ const ReturnReportFormModal: React.FC<ReturnReportFormModalProps> = ({ isOpen, o
                                     </div>
                                     <input type="text" placeholder="Nom PUDO/APM" value={item.pudoApmName} onChange={e => handleListChange('livraisonsManquantes', item.id, 'pudoApmName', e.target.value)} className="w-full p-2 border rounded-md" required />
                                     <div className="grid grid-cols-2 gap-4">
-                                        <input type="number" placeholder="Nº Sacs" value={item.sacs} onChange={e => handleListChange('livraisonsManquantes', item.id, 'sacs', parseInt(e.target.value) || 0)} min="0" className="w-full p-2 border rounded-md" />
-                                        <input type="number" placeholder="Nº Vracs" value={item.vracs} onChange={e => handleListChange('livraisonsManquantes', item.id, 'vracs', parseInt(e.target.value) || 0)} min="0" className="w-full p-2 border rounded-md" />
+                                        <div>
+                                            <label className="block text-xs font-medium text-gray-600 mb-1">Sacs</label>
+                                            <input type="number" placeholder="Nº" value={item.sacs} onChange={e => handleListChange('livraisonsManquantes', item.id, 'sacs', parseInt(e.target.value) || 0)} min="0" className="w-full p-2 border rounded-md" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-medium text-gray-600 mb-1">Vracs</label>
+                                            <input type="number" placeholder="Nº" value={item.vracs} onChange={e => handleListChange('livraisonsManquantes', item.id, 'vracs', parseInt(e.target.value) || 0)} min="0" className="w-full p-2 border rounded-md" />
+                                        </div>
                                     </div>
                                 </div>
                              ))}
