@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckinRecord } from '../types';
+import { CheckinRecord, CheckinType } from '../types';
 import { exportCheckinsToCSV } from '../utils/csvExporter';
 
 
@@ -43,6 +43,7 @@ const CheckinLog: React.FC<CheckinLogProps> = ({ records }) => {
                   <th scope="col" className="px-6 py-3">Empresa</th>
                   <th scope="col" className="px-6 py-3">Tournée</th>
                   <th scope="col" className="px-6 py-3">Tipo</th>
+                  <th scope="col" className="px-6 py-3">Uniforme</th>
                 </tr>
               </thead>
               <tbody>
@@ -56,12 +57,18 @@ const CheckinLog: React.FC<CheckinLogProps> = ({ records }) => {
                     <td className="px-6 py-4">{record.driver.tour}</td>
                     <td className="px-6 py-4">
                         <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                            record.type === 'Départ Chauffeur'
+                            record.type === CheckinType.DEPARTURE
                             ? 'bg-blue-100 text-blue-800'
                             : 'bg-green-100 text-green-800'
                         }`}>
                             {record.type}
                         </span>
+                    </td>
+                    <td className="px-6 py-4">
+                        {record.type === CheckinType.DEPARTURE
+                            ? (record.hasUniform ? 'Sí' : 'No')
+                            : <span className="text-gray-400">N/A</span>
+                        }
                     </td>
                   </tr>
                 ))}

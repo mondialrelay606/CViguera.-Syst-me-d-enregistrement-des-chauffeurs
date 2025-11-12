@@ -16,6 +16,7 @@ export interface CheckinRecord {
   driver: Driver;
   timestamp: Date;
   type: CheckinType;
+  hasUniform?: boolean; // Nuevo campo para el estado del uniforme
 }
 
 export enum ScanStatus {

@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { CheckinRecord, DailyStats, Driver } from '../../types';
+import { CheckinRecord, DailyStats, Driver, CheckinType } from '../../types';
 import { exportCheckinsToCSV } from '../../utils/csvExporter';
 import { parseDriversCSV } from '../../utils/csvParser';
 import { calculateDailyStats, getHourlyDistribution } from '../../utils/reporting';
@@ -32,13 +32,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers,
   const filteredRecords = useMemo(() => {
     if (!searchTerm.trim()) return allRecords;
     const lowercasedFilter = searchTerm.toLowerCase();
-    return allRecords.filter(record =>
-      record.driver.name.toLowerCase().includes(lowercasedFilter) ||
-      record.driver.company.toLowerCase().includes(lowercasedFilter) ||
-      record.driver.tour.toLowerCase().includes(lowercasedFilter) ||
-      record.timestamp.toLocaleString('es-ES').includes(lowercasedFilter) ||
-      record.type.toLowerCase().includes(lowercasedFilter)
-    );
+    return allRecords.filter(record => {
+      const uniformText = record.type === CheckinType.DEPARTURE ? (record.hasUniform ? 'sí' : 'no') : '';
+      return record.driver.name.toLowerCase().includes(lowercasedFilter) ||
+        record.driver.company.toLowerCase().includes(lowercasedFilter) ||
+        record.driver.tour.toLowerCase().includes(lowercasedFilter) ||
+        record.timestamp.toLocaleString('es-ES').includes(lowercasedFilter) ||
+        record.type.toLowerCase().includes(lowercasedFilter) ||
+        uniformText.includes(lowercasedFilter);
+    });
   }, [allRecords, searchTerm]);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -61,7 +63,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers,
         }
     };
     reader.readAsText(file);
-    // Limpiar el input para poder subir el mismo archivo otra vez
     event.target.value = '';
   };
 
@@ -96,7 +97,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers,
       </div>
 
       <main>
-        {/* Pestaña de Estadísticas */}
         <div className={activeTab === 'stats' ? 'block' : 'hidden'}>
             <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
               <SummaryCard title="Fichajes Totales (Hoy)" value={dailyStats.totalCheckins.toString()} />
@@ -123,7 +123,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers,
                 <div className="mb-4">
                     <input
                         type="text"
-                        placeholder="Buscar por nombre, empresa, tournée, tipo, fecha..."
+                        placeholder="Buscar por nombre, empresa, tournée, tipo, uniforme, fecha..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
@@ -138,6 +138,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers,
                                 <th scope="col" className="px-6 py-3">Empresa</th>
                                 <th scope="col" className="px-6 py-3">Tournée</th>
                                 <th scope="col" className="px-6 py-3">Tipo</th>
+                                <th scope="col" className="px-6 py-3">Uniforme</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -150,9 +151,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers,
                                 <td className="px-6 py-4">{record.driver.company}</td>
                                 <td className="px-6 py-4">{record.driver.tour}</td>
                                 <td className="px-6 py-4">
-                                  <span className={`px-2 py-1 text-xs font-semibold rounded-full ${ record.type === 'Départ Chauffeur' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800' }`}>
+                                  <span className={`px-2 py-1 text-xs font-semibold rounded-full ${ record.type === CheckinType.DEPARTURE ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800' }`}>
                                         {record.type}
                                     </span>
+                                </td>
+                                <td className="px-6 py-4">
+                                    {record.type === CheckinType.DEPARTURE
+                                        ? (record.hasUniform ? 'Sí' : 'No')
+                                        : <span className="text-gray-400">N/A</span>
+                                    }
                                 </td>
                             </tr>
                             ))}
@@ -168,7 +175,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers,
             </div>
         </div>
 
-        {/* Pestaña de Gestión de Choferes */}
         <div className={activeTab === 'drivers' ? 'block' : 'hidden'}>
             <div className="bg-white p-6 rounded-lg shadow-md mb-8">
                 <h2 className="text-xl font-bold text-gray-700 mb-4">Actualizar Lista de Choferes</h2>

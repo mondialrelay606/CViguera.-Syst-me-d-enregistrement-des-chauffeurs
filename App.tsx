@@ -41,7 +41,13 @@ const App: React.FC = () => {
     const [checkinLog, setCheckinLog] = useState<CheckinRecord[]>(() => {
         try {
             const savedLog = localStorage.getItem(CHECKIN_LOG_STORAGE_KEY);
-            return savedLog ? JSON.parse(savedLog).map((r: any) => ({...r, type: r.type || CheckinType.DEPARTURE, timestamp: new Date(r.timestamp)})) : [];
+            // Aseguramos que los datos antiguos se lean correctamente
+            return savedLog ? JSON.parse(savedLog).map((r: any) => ({
+                ...r, 
+                type: r.type || CheckinType.DEPARTURE, 
+                timestamp: new Date(r.timestamp),
+                hasUniform: r.hasUniform
+            })) : [];
         } catch (error) {
             console.error("Error al cargar el registro de fichajes:", error);
             return [];
@@ -51,6 +57,7 @@ const App: React.FC = () => {
     const [lastScanResult, setLastScanResult] = useState<ScanResultType>({ status: ScanStatus.IDLE, message: '' });
     const [loading, setLoading] = useState(true);
     const [checkinType, setCheckinType] = useState<CheckinType>(CheckinType.DEPARTURE);
+    const [hasUniform, setHasUniform] = useState(true); // Nuevo estado para el uniforme
     
     const [isAdminView, setIsAdminView] = useState(false);
     const [showAdminLogin, setShowAdminLogin] = useState(false);
@@ -76,8 +83,7 @@ const App: React.FC = () => {
     useEffect(() => {
         try {
             localStorage.setItem(CHECKIN_LOG_STORAGE_KEY, JSON.stringify(checkinLog));
-        } catch (error)
- {
+        } catch (error) {
             console.error("Error al guardar el registro de fichajes:", error);
         }
     }, [checkinLog]);
@@ -89,14 +95,12 @@ const App: React.FC = () => {
         const foundDriver = allDrivers.find(driver => driver.id === barcode.trim());
 
         if (foundDriver) {
-            // Encuentra todos los fichajes de este chofer hoy, ordenados del más nuevo al más antiguo.
             const driverCheckinsToday = checkinLog
                 .filter(record => record.driver.id === foundDriver.id && isToday(record.timestamp))
                 .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
             
             const lastCheckinType = driverCheckinsToday.length > 0 ? driverCheckinsToday[0].type : null;
 
-            // Regla 1: No se puede FICHAR SALIDA si la última acción fue una SALIDA.
             if (checkinType === CheckinType.DEPARTURE && lastCheckinType === CheckinType.DEPARTURE) {
                 setLastScanResult({
                     status: ScanStatus.ERROR,
@@ -106,7 +110,6 @@ const App: React.FC = () => {
                 return;
             }
 
-            // Regla 2: No se puede FICHAR RETORNO si no hubo una SALIDA previa.
             if (checkinType === CheckinType.RETURN && lastCheckinType !== CheckinType.DEPARTURE) {
                 setLastScanResult({
                     status: ScanStatus.ERROR,
@@ -116,19 +119,26 @@ const App: React.FC = () => {
                 return;
             }
 
-            // Si todas las validaciones pasan, se crea el nuevo registro.
             const newRecord: CheckinRecord = {
                 driver: foundDriver,
                 timestamp: new Date(),
                 type: checkinType,
             };
+            
+            let successMessage = `[${checkinType}] ${foundDriver.name} fichado correctamente.`;
+            if (checkinType === CheckinType.DEPARTURE) {
+                newRecord.hasUniform = hasUniform;
+                successMessage = `[${checkinType}] ${foundDriver.name} fichado (Uniforme: ${hasUniform ? 'Sí' : 'No'}).`;
+            }
+
             setCheckinLog(prevLog => [newRecord, ...prevLog]);
-            setLastScanResult({ status: ScanStatus.SUCCESS, message: `[${checkinType}] ${foundDriver.name} fichado correctamente.` });
+            setLastScanResult({ status: ScanStatus.SUCCESS, message: successMessage });
         
         } else {
             setLastScanResult({ status: ScanStatus.ERROR, message: `Código de barras "${barcode}" no encontrado. Verifique al chofer.` });
         }
         setBarcode('');
+        setHasUniform(true); // Resetear el checkbox a su estado por defecto para el siguiente fichaje
     };
 
     const handleAdminLogin = (password: string) => {
@@ -162,7 +172,6 @@ const App: React.FC = () => {
             setAllDrivers(prevDrivers => 
                 prevDrivers.map(d => d.id === updatedDriver.id ? updatedDriver : d)
             );
-            // No mostramos alerta aquí para una experiencia más fluida. El cambio visual es suficiente.
         } catch (error) {
             alert('Error al actualizar el chofer.');
             console.error(error);
@@ -221,8 +230,7 @@ const App: React.FC = () => {
                     <div className="bg-white p-6 rounded-lg shadow-md flex flex-col justify-center space-y-6">
                         <Clock />
                         <div className="w-full max-w-md mx-auto">
-                            {/* Selector de tipo de fichaje */}
-                            <div className="grid grid-cols-2 gap-4 mb-6">
+                            <div className="grid grid-cols-2 gap-4 mb-4">
                                 <button
                                     onClick={() => setCheckinType(CheckinType.DEPARTURE)}
                                     className={`py-4 px-4 rounded-lg text-lg font-semibold transition-all duration-200 ${checkinType === CheckinType.DEPARTURE ? 'bg-blue-600 text-white shadow-lg scale-105' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
@@ -236,6 +244,23 @@ const App: React.FC = () => {
                                     {CheckinType.RETURN}
                                 </button>
                             </div>
+                            
+                            {/* Checkbox para el uniforme, solo visible en 'Départ' */}
+                            {checkinType === CheckinType.DEPARTURE && (
+                                <div className="flex items-center justify-center mb-4 p-2 bg-blue-50 rounded-lg">
+                                    <input
+                                        id="uniform-check"
+                                        type="checkbox"
+                                        checked={hasUniform}
+                                        onChange={(e) => setHasUniform(e.target.checked)}
+                                        className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    />
+                                    <label htmlFor="uniform-check" className="ml-3 text-base font-medium text-gray-800">
+                                        Lleva el uniforme
+                                    </label>
+                                </div>
+                            )}
+
                             <form onSubmit={handleScan}>
                                 <label htmlFor="barcode-input" className="block text-sm font-medium text-gray-700 mb-2 text-center">
                                     Escanee el código de barras del chofer
