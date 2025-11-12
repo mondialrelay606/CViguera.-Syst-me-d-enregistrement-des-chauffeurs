@@ -2,8 +2,6 @@ export interface Driver {
   id: string; // Barcode value
   name: string;
   company: string;
-  password?: string; // Contraseña para el inicio de sesión
-  vehiclePlate?: string; // Matrícula del vehículo
 }
 
 export interface AttendanceRecord {
