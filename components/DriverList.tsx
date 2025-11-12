@@ -39,28 +39,41 @@ const CancelIcon = () => (
     </svg>
 );
 
+type EditableDriverData = Omit<Driver, 'id'>;
 
 const DriverList: React.FC<DriverListProps> = ({ drivers, onUpdateDriver, onDeleteDriver }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [editingDriverId, setEditingDriverId] = useState<string | null>(null);
-  const [editedData, setEditedData] = useState({ defaultPlate: '', tour: '' });
+  const [editedData, setEditedData] = useState<Partial<EditableDriverData>>({});
 
   const handleEditClick = (driver: Driver) => {
     setEditingDriverId(driver.id);
-    setEditedData({ defaultPlate: driver.defaultPlate, tour: driver.tour });
+    setEditedData({ 
+        name: driver.name,
+        subcontractor: driver.subcontractor,
+        plate: driver.plate,
+        tour: driver.tour,
+        telephone: driver.telephone
+    });
   };
 
   const handleCancelClick = () => {
     setEditingDriverId(null);
+    setEditedData({});
   };
 
   const handleSaveClick = (originalDriver: Driver) => {
-    onUpdateDriver({
-        ...originalDriver,
-        defaultPlate: editedData.defaultPlate.trim(),
-        tour: editedData.tour.trim(),
-    });
+    const updatedDriver: Driver = {
+      ...originalDriver,
+      name: editedData.name?.trim() || originalDriver.name,
+      subcontractor: editedData.subcontractor?.trim() || originalDriver.subcontractor,
+      plate: editedData.plate?.trim() || originalDriver.plate,
+      tour: editedData.tour?.trim() || originalDriver.tour,
+      telephone: editedData.telephone?.trim() || originalDriver.telephone,
+    };
+    onUpdateDriver(updatedDriver);
     setEditingDriverId(null);
+    setEditedData({});
   };
 
   const handleDataChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -75,6 +88,16 @@ const DriverList: React.FC<DriverListProps> = ({ drivers, onUpdateDriver, onDele
         String(value).toLowerCase().includes(term)
     );
   });
+
+  const renderEditableCell = (field: keyof EditableDriverData, value: string) => (
+    <input
+      type="text"
+      name={field}
+      value={value}
+      onChange={handleDataChange}
+      className="w-full p-1 border border-blue-300 rounded-md bg-white"
+    />
+  );
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md h-full flex flex-col">
@@ -100,11 +123,11 @@ const DriverList: React.FC<DriverListProps> = ({ drivers, onUpdateDriver, onDele
               <thead className="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0">
                 <tr>
                   <th scope="col" className="px-6 py-3">Nombre</th>
-                  <th scope="col" className="px-6 py-3">Empresa</th>
                   <th scope="col" className="px-6 py-3">Subcontratista</th>
-                  <th scope="col" className="px-6 py-3">Matrícula por Def.</th>
+                  <th scope="col" className="px-6 py-3">Plaque</th>
                   <th scope="col" className="px-6 py-3">Tournée</th>
-                  <th scope="col" className="px-6 py-3">Código de Barras</th>
+                  <th scope="col" className="px-6 py-3">Telephone</th>
+                  <th scope="col" className="px-6 py-3">Identifiant</th>
                   <th scope="col" className="px-6 py-3 text-center">Acciones</th>
                 </tr>
               </thead>
@@ -113,35 +136,11 @@ const DriverList: React.FC<DriverListProps> = ({ drivers, onUpdateDriver, onDele
                   const isEditing = editingDriverId === driver.id;
                   return (
                     <tr key={driver.id} className={`bg-white border-b hover:bg-gray-50 ${isEditing ? 'bg-blue-50' : ''}`}>
-                      <td className="px-6 py-2 font-medium text-gray-900 whitespace-nowrap">{driver.name}</td>
-                      <td className="px-6 py-2">{driver.company}</td>
-                      <td className="px-6 py-2">{driver.subcontractor}</td>
-                      <td className="px-6 py-2">
-                        {isEditing ? (
-                          <input
-                            type="text"
-                            name="defaultPlate"
-                            value={editedData.defaultPlate}
-                            onChange={handleDataChange}
-                            className="w-full p-1 border border-blue-300 rounded-md"
-                          />
-                        ) : (
-                          driver.defaultPlate
-                        )}
-                      </td>
-                      <td className="px-6 py-2">
-                        {isEditing ? (
-                          <input
-                            type="text"
-                            name="tour"
-                            value={editedData.tour}
-                            onChange={handleDataChange}
-                            className="w-full p-1 border border-blue-300 rounded-md"
-                          />
-                        ) : (
-                          driver.tour
-                        )}
-                      </td>
+                      <td className="px-6 py-2">{isEditing ? renderEditableCell('name', editedData.name || '') : driver.name}</td>
+                      <td className="px-6 py-2">{isEditing ? renderEditableCell('subcontractor', editedData.subcontractor || '') : driver.subcontractor}</td>
+                      <td className="px-6 py-2">{isEditing ? renderEditableCell('plate', editedData.plate || '') : driver.plate}</td>
+                      <td className="px-6 py-2">{isEditing ? renderEditableCell('tour', editedData.tour || '') : driver.tour}</td>
+                      <td className="px-6 py-2">{isEditing ? renderEditableCell('telephone', editedData.telephone || '') : driver.telephone}</td>
                       <td className="px-6 py-2 text-xs font-mono">{driver.id}</td>
                       <td className="px-6 py-2">
                         <div className="flex items-center justify-center space-x-2">

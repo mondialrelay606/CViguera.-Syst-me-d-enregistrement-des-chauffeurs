@@ -1,10 +1,10 @@
 export interface Driver {
-  id: string; // ID Code-barres
+  id: string; // Identifiant
   name: string; // Nom
-  company: string; // Société
   subcontractor: string; // Sous-traitant
-  defaultPlate: string; // Plaque par déf.
+  plate: string; // Plaque
   tour: string; // Tournée
+  telephone: string; // Telephone
 }
 
 export enum CheckinType {
@@ -67,5 +67,4 @@ export interface ScanResult {
 export interface DailyStats {
     totalCheckins: number;
     uniqueDrivers: number;
-    busiestHour: string;
 }

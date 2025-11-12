@@ -6,7 +6,7 @@ export const exportCheckinsToCSV = (records: CheckinRecord[], filename: string =
     return;
   }
 
-  const headers = ['Hora de Entrada', 'Nombre del Chofer', 'Empresa', 'Tournée', 'Uniforme', 'Código de Barras', 'Tipo de Movimiento'];
+  const headers = ['Hora de Entrada', 'Nombre del Chofer', 'Subcontratista', 'Tournée', 'Uniforme', 'Identifiant', 'Telephone', 'Tipo de Movimiento'];
   const rows = records.map(record => {
     const uniformStatus = record.type === CheckinType.DEPARTURE 
         ? (record.hasUniform ? 'Sí' : 'No') 
@@ -15,10 +15,11 @@ export const exportCheckinsToCSV = (records: CheckinRecord[], filename: string =
     return [
       record.timestamp.toLocaleString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }),
       record.driver.name,
-      record.driver.company,
+      record.driver.subcontractor,
       record.driver.tour,
       uniformStatus,
       record.driver.id,
+      record.driver.telephone,
       record.type
     ];
   });

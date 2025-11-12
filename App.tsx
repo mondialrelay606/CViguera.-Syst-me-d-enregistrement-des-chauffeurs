@@ -25,9 +25,9 @@ const isToday = (someDate: Date): boolean => {
 };
 
 
-const BarcodeIcon = () => (
+const IdentificationIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8 text-gray-400">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 4.5A.75.75 0 0 1 4.5 3.75h15a.75.75 0 0 1 .75.75v15a.75.75 0 0 1-.75.75h-15a.75.75 0 0 1-.75-.75v-15Zm.75 0v15h13.5v-15h-13.5ZM8.25 6h.75v12h-.75V6Zm2.25 0h.75v12h-.75V6Zm2.25 0h.75v12h-.75V6Zm2.25 0h.75v12h-.75V6Z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Zm6-10.125a1.875 1.875 0 1 1-3.75 0 1.875 1.875 0 0 1 3.75 0Zm1.294 6.336a6.721 6.721 0 0 1-3.17.789 6.721 6.721 0 0 1-3.168-.789 3.376 3.376 0 0 1 6.338 0Z" />
     </svg>
 );
 
@@ -61,7 +61,7 @@ const App: React.FC = () => {
             return [];
         }
     });
-    const [barcode, setBarcode] = useState('');
+    const [identifier, setIdentifier] = useState('');
     const [lastScanResult, setLastScanResult] = useState<ScanResultType>({ status: ScanStatus.IDLE, message: '' });
     const [loading, setLoading] = useState(true);
     const [checkinType, setCheckinType] = useState<CheckinType>(CheckinType.DEPARTURE);
@@ -70,7 +70,7 @@ const App: React.FC = () => {
     const [isAdminView, setIsAdminView] = useState(false);
     const [showAdminLogin, setShowAdminLogin] = useState(false);
     
-    const barcodeInputRef = useRef<HTMLInputElement>(null);
+    const identifierInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         const loadDrivers = async () => {
@@ -85,7 +85,7 @@ const App: React.FC = () => {
             }
         };
         loadDrivers();
-        barcodeInputRef.current?.focus();
+        identifierInputRef.current?.focus();
     }, []);
 
     useEffect(() => {
@@ -106,9 +106,9 @@ const App: React.FC = () => {
 
     const handleScan = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (!barcode.trim()) return;
+        if (!identifier.trim()) return;
 
-        const foundDriver = allDrivers.find(driver => driver.id === barcode.trim());
+        const foundDriver = allDrivers.find(driver => driver.id === identifier.trim());
 
         if (foundDriver) {
             const driverCheckinsToday = checkinLog
@@ -122,7 +122,7 @@ const App: React.FC = () => {
                     status: ScanStatus.ERROR,
                     message: `Error: ${foundDriver.name} ya tiene una salida registrada sin retorno. No puede fichar 'Départ' de nuevo.`
                 });
-                setBarcode('');
+                setIdentifier('');
                 return;
             }
 
@@ -131,7 +131,7 @@ const App: React.FC = () => {
                     status: ScanStatus.ERROR,
                     message: `Error: ${foundDriver.name} no puede fichar 'Retour' sin un 'Départ' previo hoy.`
                 });
-                setBarcode('');
+                setIdentifier('');
                 return;
             }
 
@@ -151,9 +151,9 @@ const App: React.FC = () => {
             setLastScanResult({ status: ScanStatus.SUCCESS, message: successMessage });
         
         } else {
-            setLastScanResult({ status: ScanStatus.ERROR, message: `Código de barras "${barcode}" no encontrado. Verifique al chofer.` });
+            setLastScanResult({ status: ScanStatus.ERROR, message: `Identifiant "${identifier}" no encontrado. Verifique al chofer.` });
         }
-        setBarcode('');
+        setIdentifier('');
         setHasUniform(true); // Resetear el checkbox a su estado por defecto para el siguiente fichaje
     };
 
@@ -168,7 +168,7 @@ const App: React.FC = () => {
     
     const handleLogout = () => {
         setIsAdminView(false);
-        barcodeInputRef.current?.focus();
+        identifierInputRef.current?.focus();
     };
 
     const handleUpdateDrivers = async (newDrivers: Driver[]) => {
@@ -245,7 +245,7 @@ const App: React.FC = () => {
                 <header className="mb-6">
                     <div className="relative text-center">
                         <h1 className="text-4xl font-bold text-gray-800">Sistema de Fichaje de Choferes</h1>
-                        <p className="text-lg text-gray-600">Registro de entradas por código de barras</p>
+                        <p className="text-lg text-gray-600">Registro de entradas por Identifiant</p>
                         <button
                             onClick={() => setShowAdminLogin(true)}
                             className="absolute top-0 right-0 flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-all"
@@ -293,20 +293,20 @@ const App: React.FC = () => {
                             )}
 
                             <form onSubmit={handleScan}>
-                                <label htmlFor="barcode-input" className="block text-sm font-medium text-gray-700 mb-2 text-center">
-                                    Escanee el código de barras del chofer
+                                <label htmlFor="identifier-input" className="block text-sm font-medium text-gray-700 mb-2 text-center">
+                                    Introduzca el Identifiant del chofer
                                 </label>
                                 <div className="relative">
                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <BarcodeIcon />
+                                        <IdentificationIcon />
                                     </div>
                                     <input
-                                        ref={barcodeInputRef}
-                                        id="barcode-input"
+                                        ref={identifierInputRef}
+                                        id="identifier-input"
                                         type="text"
-                                        value={barcode}
-                                        onChange={(e) => setBarcode(e.target.value)}
-                                        placeholder="Esperando código..."
+                                        value={identifier}
+                                        onChange={(e) => setIdentifier(e.target.value)}
+                                        placeholder="Esperando Identifiant..."
                                         className="w-full pl-14 pr-4 py-3 text-lg border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
                                         autoFocus
                                     />

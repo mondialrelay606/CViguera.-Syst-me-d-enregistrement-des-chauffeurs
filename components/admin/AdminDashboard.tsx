@@ -40,8 +40,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers,
     return allRecords.filter(record => {
       const uniformText = record.type === CheckinType.DEPARTURE ? (record.hasUniform ? 'sí' : 'no') : '';
       return record.driver.name.toLowerCase().includes(lowercasedFilter) ||
-        record.driver.company.toLowerCase().includes(lowercasedFilter) ||
+        record.driver.subcontractor.toLowerCase().includes(lowercasedFilter) ||
         record.driver.tour.toLowerCase().includes(lowercasedFilter) ||
+        record.driver.telephone.toLowerCase().includes(lowercasedFilter) ||
         record.timestamp.toLocaleString('es-ES').includes(lowercasedFilter) ||
         record.type.toLowerCase().includes(lowercasedFilter) ||
         uniformText.includes(lowercasedFilter);
@@ -109,10 +110,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers,
 
       <main>
         <div className={activeTab === 'stats' ? 'block' : 'hidden'}>
-            <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <section className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
               <SummaryCard title="Fichajes Totales (Hoy)" value={dailyStats.totalCheckins.toString()} />
               <SummaryCard title="Choferes Únicos (Hoy)" value={dailyStats.uniqueDrivers.toString()} />
-              <SummaryCard title="Hora Punta (Hoy)" value={dailyStats.busiestHour} />
             </section>
 
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
@@ -133,7 +133,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers,
                 <div className="mb-4">
                     <input
                         type="text"
-                        placeholder="Buscar por nombre, empresa, tournée, tipo, uniforme, fecha..."
+                        placeholder="Buscar por nombre, subcontratista, tournée, teléfono..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
@@ -145,7 +145,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers,
                             <tr>
                                 <th scope="col" className="px-6 py-3">Fecha y Hora</th>
                                 <th scope="col" className="px-6 py-3">Nombre</th>
-                                <th scope="col" className="px-6 py-3">Empresa</th>
+                                <th scope="col" className="px-6 py-3">Subcontratista</th>
                                 <th scope="col" className="px-6 py-3">Tournée</th>
                                 <th scope="col" className="px-6 py-3">Tipo</th>
                                 <th scope="col" className="px-6 py-3">Uniforme</th>
@@ -158,7 +158,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers,
                                     {record.timestamp.toLocaleString('es-ES')}
                                 </td>
                                 <td className="px-6 py-4">{record.driver.name}</td>
-                                <td className="px-6 py-4">{record.driver.company}</td>
+                                <td className="px-6 py-4">{record.driver.subcontractor}</td>
                                 <td className="px-6 py-4">{record.driver.tour}</td>
                                 <td className="px-6 py-4">
                                   <span className={`px-2 py-1 text-xs font-semibold rounded-full ${ record.type === CheckinType.DEPARTURE ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800' }`}>
@@ -189,6 +189,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers,
             <ReturnReportManager 
                 allReports={allReports}
                 allRecords={allRecords}
+                allDrivers={allDrivers}
                 onAddReport={onAddReport}
                 onUpdateReport={onUpdateReport}
             />
@@ -198,7 +199,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers,
             <div className="bg-white p-6 rounded-lg shadow-md mb-8">
                 <h2 className="text-xl font-bold text-gray-700 mb-4">Actualizar Lista de Choferes</h2>
                 <p className="text-sm text-gray-600 mb-4">
-                    Sube un archivo en formato CSV para reemplazar la lista actual. El archivo debe tener las columnas: <code className="bg-gray-200 text-sm p-1 rounded">Nom,Société,Sous-traitant,Plaque par déf.,Tournée,ID Code-barres</code>.
+                    Sube un archivo en formato CSV para reemplazar la lista actual. El archivo debe tener las columnas: <code className="bg-gray-200 text-sm p-1 rounded">Nom,Sous-traitant,Plaque,Tournée,Identifiant,telephone</code>.
                 </p>
                 <input
                     type="file"

@@ -15,7 +15,7 @@ export const parseDriversCSV = (csvContent: string): Driver[] => {
 
   const header = lines[0].split(',').map(h => h.trim().toLowerCase());
   
-  const requiredHeaders = ['nom', 'société', 'sous-traitant', 'plaque par déf.', 'tournée', 'id code-barres'];
+  const requiredHeaders = ['nom', 'sous-traitant', 'plaque', 'tournée', 'identifiant', 'telephone'];
   const headerIndices: { [key: string]: number } = {};
 
   requiredHeaders.forEach(reqHeader => {
@@ -33,15 +33,15 @@ export const parseDriversCSV = (csvContent: string): Driver[] => {
     if (data.length >= header.length) {
         const driver: Driver = {
             name: data[headerIndices['nom']]?.trim() || '',
-            company: data[headerIndices['société']]?.trim() || '',
             subcontractor: data[headerIndices['sous-traitant']]?.trim() || '',
-            defaultPlate: data[headerIndices['plaque par déf.']]?.trim() || '',
+            plate: data[headerIndices['plaque']]?.trim() || '',
             tour: data[headerIndices['tournée']]?.trim() || '',
-            id: data[headerIndices['id code-barres']]?.trim() || '',
+            id: data[headerIndices['identifiant']]?.trim() || '',
+            telephone: data[headerIndices['telephone']]?.trim() || '',
         };
 
         // Asegurarse de que los campos esenciales no estén vacíos
-        if (driver.id && driver.name && driver.company) {
+        if (driver.id && driver.name && driver.subcontractor) {
              drivers.push(driver);
         }
     }

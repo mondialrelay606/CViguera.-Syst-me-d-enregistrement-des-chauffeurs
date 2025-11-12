@@ -1,11 +1,12 @@
 import React, { useState, useMemo } from 'react';
-import { ReturnReport, CheckinRecord, CheckinType } from '../../types';
+import { ReturnReport, CheckinRecord, CheckinType, Driver } from '../../types';
 import ReturnReportFormModal from './ReturnReportFormModal';
-import { exportReportsToCSV } from '../../utils/reportExporter';
+import { exportReportsToExcel } from '../../utils/excelExporter';
 
 interface ReturnReportManagerProps {
     allReports: ReturnReport[];
     allRecords: CheckinRecord[];
+    allDrivers: Driver[];
     onAddReport: (newReport: ReturnReport) => void;
     onUpdateReport: (updatedReport: ReturnReport) => void;
 }
@@ -29,14 +30,18 @@ const CreateIcon = () => (
     </svg>
 );
 
-const ExportIcon = () => (
+const ExportExcelIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 8.25H7.5a2.25 2.25 0 0 0-2.25 2.25v9a2.25 2.25 0 0 0 2.25 2.25h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25H15m0-3-3-3m0 0-3 3m3-3v11.25" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3.375 21v-7.5h17.25V21H3.375Z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3.375 13.5v-7.5A2.25 2.25 0 0 1 5.625 3.75h12.75c1.24 0 2.25 1.01 2.25 2.25v7.5" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 17.25v.008h.008V17.25H9Z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 17.25v.008h.008V17.25H12Z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 17.25v.008h.008V17.25H15Z" />
     </svg>
 );
 
 
-const ReturnReportManager: React.FC<ReturnReportManagerProps> = ({ allReports, allRecords, onAddReport, onUpdateReport }) => {
+const ReturnReportManager: React.FC<ReturnReportManagerProps> = ({ allReports, allRecords, allDrivers, onAddReport, onUpdateReport }) => {
     const [showModal, setShowModal] = useState(false);
     const [editingReport, setEditingReport] = useState<ReturnReport | null>(null);
     const [checkinForNewReport, setCheckinForNewReport] = useState<CheckinRecord | null>(null);
@@ -57,9 +62,9 @@ const ReturnReportManager: React.FC<ReturnReportManagerProps> = ({ allReports, a
     }, [allReports]);
 
     const uniqueSubcontractors = useMemo(() => {
-        const subcontractors = new Set(todayReturnCheckins.map(c => c.driver.subcontractor));
+        const subcontractors = new Set(allDrivers.map(driver => driver.subcontractor));
         return Array.from(subcontractors).sort();
-    }, [todayReturnCheckins]);
+    }, [allDrivers]);
 
     const filteredCheckins = useMemo(() => {
         return todayReturnCheckins.filter(c => {
@@ -75,7 +80,6 @@ const ReturnReportManager: React.FC<ReturnReportManagerProps> = ({ allReports, a
              if (filterSubcontractor && report.subcontractor !== filterSubcontractor) {
                 return false;
             }
-            // Optional: filter only for today's reports if needed
             const reportDate = new Date(report.reportDate);
             return isToday(reportDate);
         });
@@ -85,7 +89,7 @@ const ReturnReportManager: React.FC<ReturnReportManagerProps> = ({ allReports, a
             return;
         }
 
-        exportReportsToCSV(reportsToExport, `reportes_${filterSubcontractor || 'todos'}_${new Date().toISOString().split('T')[0]}.csv`);
+        exportReportsToExcel(reportsToExport, `reportes_${filterSubcontractor || 'todos'}_${new Date().toISOString().split('T')[0]}.xlsx`);
     };
 
     const handleCreateClick = (checkin: CheckinRecord) => {
@@ -146,11 +150,11 @@ const ReturnReportManager: React.FC<ReturnReportManagerProps> = ({ allReports, a
                     <h2 className="text-2xl font-bold text-gray-800">Estado de Reportes de Retorno (Hoy)</h2>
                     <button
                         onClick={handleExport}
-                        className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors w-full sm:w-auto flex items-center justify-center"
+                        className="bg-green-600 text-white px-5 py-2 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition-colors w-full sm:w-auto flex items-center justify-center"
                         disabled={allReports.length === 0}
                     >
-                        <ExportIcon />
-                        Exportar CSV
+                        <ExportExcelIcon />
+                        Exportar Excel
                     </button>
                 </div>
 

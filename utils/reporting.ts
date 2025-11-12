@@ -21,30 +21,9 @@ export const calculateDailyStats = (records: CheckinRecord[]): DailyStats => {
   const uniqueDriverIds = new Set(todayRecords.map(r => r.driver.id));
   const uniqueDrivers = uniqueDriverIds.size;
 
-  let busiestHour = 'N/A';
-  if (totalCheckins > 0) {
-    const hours = todayRecords.map(r => r.timestamp.getHours());
-    const hourCounts: { [key: number]: number } = {};
-    let maxCount = 0;
-    let bestHour = -1;
-
-    for (const hour of hours) {
-      hourCounts[hour] = (hourCounts[hour] || 0) + 1;
-      if (hourCounts[hour] > maxCount) {
-        maxCount = hourCounts[hour];
-        bestHour = hour;
-      }
-    }
-    if (bestHour !== -1) {
-        const nextHour = bestHour + 1;
-        busiestHour = `${bestHour.toString().padStart(2, '0')}:00 - ${nextHour.toString().padStart(2, '0')}:00`;
-    }
-  }
-
   return {
     totalCheckins,
     uniqueDrivers,
-    busiestHour,
   };
 };
 
