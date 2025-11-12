@@ -42,22 +42,18 @@ const CheckinLog: React.FC<CheckinLogProps> = ({ records }) => {
                 <tr>
                   <th scope="col" className="px-6 py-3">{t('checkinLog.headers.name')}</th>
                   <th scope="col" className="px-6 py-3">{t('checkinLog.headers.company')}</th>
-                  <th scope="col" className="px-6 py-3">{t('checkinLog.headers.subcontractor')}</th>
-                  <th scope="col" className="px-6 py-3">{t('checkinLog.headers.route')}</th>
                   <th scope="col" className="px-6 py-3">{t('checkinLog.headers.plate')}</th>
                   <th scope="col" className="px-6 py-3">{t('checkinLog.headers.checkin')}</th>
                   <th scope="col" className="px-6 py-3">{t('checkinLog.headers.checkout')}</th>
                 </tr>
               </thead>
               <tbody>
-                {records.map((record) => (
-                  <tr key={record.id} className="bg-white/70 border-b border-gray-200/50 hover:bg-gray-50/70">
+                {records.map((record, index) => (
+                  <tr key={index} className="bg-white/70 border-b border-gray-200/50 hover:bg-gray-50/70">
                     <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
                       {record.driver.name}
                     </td>
                     <td className="px-6 py-4">{record.driver.company}</td>
-                    <td className="px-6 py-4">{record.driver.subcontractor || t('general.notAvailable')}</td>
-                    <td className="px-6 py-4 text-gray-600">{record.driver.route || t('general.notAvailable')}</td>
                     <td className="px-6 py-4 font-mono text-xs">{record.vehiclePlate || t('general.notAvailable')}</td>
                     <td className="px-6 py-4">
                       {record.checkinTime.toLocaleTimeString('es-ES')}

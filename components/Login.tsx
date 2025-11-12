@@ -1,15 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from '../contexts/LanguageContext';
 import LanguageSwitcher from './LanguageSwitcher';
-import { Driver } from '../types';
 
 interface LoginProps {
-    onIdentifyDriver: (id: string) => { driver: Driver | null, isCheckedIn: boolean, error?: string };
+    onDriverLogin: (id: string) => boolean;
     onAdminAccess: () => void;
-    onProfileAccess: (driver: Driver) => void;
-    onCheckIn: (driver: Driver, plate: string) => void;
-    onCheckOut: (driver: Driver) => void;
-    onSubcontractorAccessRequest: () => void;
 }
 
 const BarcodeIcon = () => (
@@ -18,226 +13,63 @@ const BarcodeIcon = () => (
     </svg>
 );
 
-
-const CompanyLogo = () => {
-    const { t } = useTranslation();
-    return (
-        <img src="/logo.png" alt={t('login.companyLogoAlt')} className="w-24 h-24 mx-auto" />
-    );
-};
-
-
-const Login: React.FC<LoginProps> = ({ onIdentifyDriver, onAdminAccess, onProfileAccess, onCheckIn, onCheckOut, onSubcontractorAccessRequest }) => {
+const Login: React.FC<LoginProps> = ({ onDriverLogin, onAdminAccess }) => {
     const { t } = useTranslation();
     const [id, setId] = useState('');
     const [error, setError] = useState<string | null>(null);
-    const [identifiedDriver, setIdentifiedDriver] = useState<Driver | null>(null);
-    const [isCheckedIn, setIsCheckedIn] = useState(false);
-    const [isEnteringPlate, setIsEnteringPlate] = useState(false);
-    const [plate, setPlate] = useState('');
-    
     const scanInputRef = useRef<HTMLInputElement>(null);
-    const plateInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
-        if (isEnteringPlate) {
-            plateInputRef.current?.focus();
-        } else if (!identifiedDriver) {
-            scanInputRef.current?.focus();
-        }
-    }, [identifiedDriver, isEnteringPlate]);
+        scanInputRef.current?.focus();
+    }, []);
 
-    const resetState = () => {
-        setId('');
-        setIdentifiedDriver(null);
-        setIsCheckedIn(false);
-        setIsEnteringPlate(false);
-        setPlate('');
-        setError(null);
-    };
-
-    const handleIdentificationSubmit = (e: React.FormEvent) => {
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
         if (!id.trim()) return;
-        
-        // Special code for admin access
-        if (id.trim().toUpperCase() === 'ADMIN') {
-            onAdminAccess();
-            setId('');
-            return;
-        }
-
-        const result = onIdentifyDriver(id);
-        
-        if (result.driver) {
-            setIdentifiedDriver(result.driver);
-            setIsCheckedIn(result.isCheckedIn);
-            setId('');
-        } else {
-            setError(result.error || t('login.errorNotFound', { id }));
+        const loginSuccessful = onDriverLogin(id);
+        if (!loginSuccessful) {
+            setError(t('login.errorNotFound', { id }));
             setId('');
         }
-    }
-    
-    const handleCheckInClick = () => {
-        if (!identifiedDriver) return;
-        if (identifiedDriver.vehiclePlate) {
-            onCheckIn(identifiedDriver, identifiedDriver.vehiclePlate);
-            resetState();
-        } else {
-            setPlate('');
-            setIsEnteringPlate(true);
-        }
-    };
-
-    const handlePlateSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (identifiedDriver && plate.trim()) {
-            onCheckIn(identifiedDriver, plate.trim());
-            resetState();
-        }
-    };
-
-    const handleCheckOutClick = () => {
-        if (identifiedDriver) {
-            onCheckOut(identifiedDriver);
-            resetState();
-        }
-    };
-
-    const handleCancel = () => {
-        resetState();
-    };
-
-    const renderIdentificationView = () => (
-        <form onSubmit={handleIdentificationSubmit} className="space-y-4">
-            <div>
-                <label htmlFor="scan-input" className="block text-sm font-medium text-gray-700 text-center mb-2">
-                    {t('login.scanPrompt')}
-                </label>
-                <div className="relative">
-                    <div className="absolute inset-y-0 start-0 ps-3 flex items-center pointer-events-none"><BarcodeIcon/></div>
-                    <input
-                        ref={scanInputRef}
-                        id="scan-input"
-                        type="text"
-                        value={id}
-                        onChange={(e) => setId(e.target.value)}
-                        placeholder={t('general.waitingForCode')}
-                        className="w-full ps-12 pe-4 py-3 text-lg border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                        autoFocus
-                    />
-                </div>
-            </div>
-        </form>
-    );
-
-    const renderActionView = () => {
-        if (!identifiedDriver) return null;
-        
-        const actionButtonText = isCheckedIn ? t('login.registerExitButton') : t('login.registerEntryButton');
-        const actionButtonClass = isCheckedIn ? 'bg-red-600 hover:bg-red-700 focus:ring-red-500' : 'bg-green-600 hover:bg-green-700 focus:ring-green-500';
-        const actionHandler = isCheckedIn ? handleCheckOutClick : handleCheckInClick;
-
-        return (
-             <div className="space-y-4 text-center">
-                 <p className="text-gray-600">{t('login.driverIdentified', { name: identifiedDriver.name })}</p>
-                <div className="flex flex-col space-y-3">
-                    <button 
-                        onClick={() => onProfileAccess(identifiedDriver)}
-                        className="w-full py-3 px-4 rounded-md shadow-sm text-sm font-medium text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-                    >
-                       {t('login.profileButton')}
-                    </button>
-                    <button 
-                        onClick={actionHandler}
-                        className={`w-full py-3 px-4 rounded-md shadow-sm text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 ${actionButtonClass}`}
-                    >
-                        {actionButtonText}
-                    </button>
-                </div>
-                 <button onClick={handleCancel} className="text-sm text-blue-600 hover:underline">
-                    {t('login.scanAnother')}
-                 </button>
-            </div>
-        );
-    };
-
-    const renderPlateEntryView = () => {
-        if (!identifiedDriver) return null;
-        return (
-             <div className="space-y-4">
-                <div className="text-center">
-                    <h3 className="font-semibold text-gray-800">{t('login.driverIdentified', { name: identifiedDriver.name })}</h3>
-                    <p className="text-gray-600 text-sm mt-1">{t('login.plateInstruction')}</p>
-                </div>
-                 <form onSubmit={handlePlateSubmit} className="space-y-3">
-                    <div>
-                         <label htmlFor="plate-input" className="sr-only">
-                            {t('login.plateLabel')}
-                        </label>
-                        <input
-                            ref={plateInputRef}
-                            id="plate-input"
-                            type="text"
-                            value={plate}
-                            onChange={(e) => setPlate(e.target.value.toUpperCase())}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-lg font-mono text-center"
-                            required
-                            placeholder={t('login.platePlaceholder')}
-                            autoFocus
-                        />
-                    </div>
-                     <button 
-                        type="submit" 
-                        className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-                        disabled={!plate.trim()}
-                    >
-                        {t('login.confirmButton')}
-                    </button>
-                </form>
-                 <button onClick={() => setIsEnteringPlate(false)} className="w-full text-sm text-center text-gray-500 hover:underline mt-2">
-                    {t('general.cancel')}
-                </button>
-            </div>
-        );
-    };
-
-    const renderContent = () => {
-        if (isEnteringPlate) {
-            return renderPlateEntryView();
-        }
-        if (identifiedDriver) {
-            return renderActionView();
-        }
-        return renderIdentificationView();
     }
 
     return (
-        <div className="flex flex-col justify-center items-center p-4">
+        <div className="min-h-screen flex flex-col justify-center items-center p-4">
              <div className="absolute top-4 right-4">
                 <LanguageSwitcher />
             </div>
             <div className="max-w-md w-full bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-8 space-y-6">
                 <div className="text-center">
-                    <CompanyLogo />
-                    <h1 className="text-3xl font-bold text-gray-800 mt-4">{t('login.welcome')}</h1>
+                    <h1 className="text-3xl font-bold text-gray-800">{t('login.welcome')}</h1>
                     <p className="text-gray-500">{t('login.title')}</p>
                 </div>
                 
                 {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">{error}</div>}
 
-                {renderContent()}
-
-                 <div className="text-center pt-4 border-t border-gray-200">
-                    <button
-                        onClick={onSubcontractorAccessRequest}
-                        className="text-sm font-medium text-gray-600 hover:text-blue-600"
-                    >
-                        {t('login.subcontractor.access')}
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label htmlFor="scan-input" className="block text-sm font-medium text-gray-700 text-center mb-2">
+                            {t('login.scanPrompt')}
+                        </label>
+                        <div className="relative">
+                            <div className="absolute inset-y-0 start-0 ps-3 flex items-center pointer-events-none"><BarcodeIcon/></div>
+                            <input
+                                ref={scanInputRef}
+                                id="scan-input"
+                                type="text"
+                                value={id}
+                                onChange={(e) => setId(e.target.value)}
+                                placeholder={t('general.waitingForCode')}
+                                className="w-full ps-12 pe-4 py-3 text-lg border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                autoFocus
+                            />
+                        </div>
+                    </div>
+                     <button type="submit" className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        {t('login.accessButton')}
                     </button>
-                </div>
+                </form>
             </div>
 
             <div className="mt-6 text-center">
@@ -248,12 +80,6 @@ const Login: React.FC<LoginProps> = ({ onIdentifyDriver, onAdminAccess, onProfil
                     {t('login.adminAccess')}
                 </button>
             </div>
-
-            <footer className="absolute bottom-4 text-center w-full">
-                <p className="text-xs text-white/60 text-shadow">
-                    Desarrollado por cviguera
-                </p>
-            </footer>
         </div>
     );
 };

@@ -1,356 +1,203 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Driver, AttendanceRecord, ScanResult, ScanStatus, ReturnInfo, SubcontractorUser } from './types';
+import React, { useState, useEffect } from 'react';
+import { Driver, AttendanceRecord, ScanStatus, type ScanResult as ScanResultType } from './types';
 import { driverService } from './services/driverService';
 import { notificationService } from './services/notificationService';
 import { useTranslation } from './contexts/LanguageContext';
 import Login from './components/Login';
 import AdminPanel from './components/AdminPanel';
 import DriverDashboard from './components/DriverDashboard';
-import Clock from './components/Clock';
-import ScanResultDisplay from './components/ScanResult';
-import SubcontractorLogin from './components/SubcontractorLogin';
-import SubcontractorPanel from './components/SubcontractorPanel';
+import VehiclePlateEntry from './components/VehiclePlateEntry';
 
-type View = 'login' | 'driverDashboard' | 'adminPanel' | 'subcontractorPanel';
+type View = 'login' | 'driver' | 'admin' | 'plateEntry';
 
 const App: React.FC = () => {
-  const { t } = useTranslation();
-  const [drivers, setDrivers] = useState<Driver[]>([]);
-  const [subcontractorUsers, setSubcontractorUsers] = useState<SubcontractorUser[]>([]);
-  
-  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>(() => {
-    try {
-      const savedRecords = localStorage.getItem('attendanceRecords');
-      return savedRecords ? JSON.parse(savedRecords, (key, value) => {
-        if (key === 'checkinTime' || key === 'checkoutTime') {
-          return value ? new Date(value) : null;
+    const { t } = useTranslation();
+    const [allDrivers, setAllDrivers] = useState<Driver[]>([]);
+    const [attendanceLog, setAttendanceLog] = useState<AttendanceRecord[]>([]);
+    const [activeDriverIds, setActiveDriverIds] = useState<Set<string>>(new Set());
+    const [lastScanResult, setLastScanResult] = useState<ScanResultType>({ status: ScanStatus.IDLE, message: '' });
+    const [loading, setLoading] = useState(true);
+    const [isSyncing, setIsSyncing] = useState(false);
+    const [view, setView] = useState<View>('login');
+    const [currentUser, setCurrentUser] = useState<Driver | null>(null);
+
+    useEffect(() => {
+        const loadDrivers = async () => {
+            try {
+                const drivers = await driverService.fetchDrivers();
+                setAllDrivers(drivers);
+            } catch (error) {
+                console.error("Error al cargar los choferes:", error);
+                setLastScanResult({ status: ScanStatus.ERROR, message: t('app.errors.loadDrivers') });
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadDrivers();
+    }, [t]);
+
+    const handleScan = (barcode: string) => {
+        const trimmedBarcode = barcode.trim();
+        if (!trimmedBarcode) return;
+
+        const foundDriver = allDrivers.find(driver => driver.id === trimmedBarcode);
+
+        if (!foundDriver) {
+            setLastScanResult({ status: ScanStatus.ERROR, message: t('app.scan.notFound', { barcode: trimmedBarcode }) });
+            return;
         }
-        return value;
-      }) : [];
-    } catch (error) {
-      console.error("Error loading attendance records from localStorage", error);
-      return [];
-    }
-  });
 
-  const [returnRecords, setReturnRecords] = useState<ReturnInfo[]>(() => {
-      try {
-          const savedRecords = localStorage.getItem('returnRecords');
-          return savedRecords ? JSON.parse(savedRecords, (key, value) => {
-              if (key === 'recordedAt') {
-                  return new Date(value);
-              }
-              return value;
-          }) : [];
-      } catch (error) {
-          console.error("Error loading return records from localStorage", error);
-          return [];
-      }
-  });
-  
-  const [view, setView] = useState<View>('login');
-  const [activeDriver, setActiveDriver] = useState<Driver | null>(null);
-  const [activeSubcontractor, setActiveSubcontractor] = useState<SubcontractorUser | null>(null);
-  const [scanResult, setScanResult] = useState<ScanResult>({ status: ScanStatus.IDLE, message: '' });
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSubcontractorLoginOpen, setIsSubcontractorLoginOpen] = useState(false);
+        const now = new Date();
+        const isDriverActive = activeDriverIds.has(foundDriver.id);
 
-  useEffect(() => {
-    Promise.all([
-        driverService.fetchDrivers(),
-        driverService.fetchSubcontractorUsers()
-    ]).then(([fetchedDrivers, fetchedSubcontractorUsers]) => {
-        setDrivers(fetchedDrivers);
-        setSubcontractorUsers(fetchedSubcontractorUsers);
-    }).catch(console.error)
-      .finally(() => setIsLoading(false));
-  }, []);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('attendanceRecords', JSON.stringify(attendanceRecords));
-    } catch (error) {
-      console.error("Error saving attendance records to localStorage", error);
-    }
-  }, [attendanceRecords]);
-
-  useEffect(() => {
-      try {
-          localStorage.setItem('returnRecords', JSON.stringify(returnRecords));
-      } catch (error) {
-          console.error("Error saving return records to localStorage", error);
-      }
-  }, [returnRecords]);
-
-  const resetScanResult = useCallback(() => {
-    setTimeout(() => setScanResult({ status: ScanStatus.IDLE, message: '' }), 5000);
-  }, []);
-  
-  const handleCheckIn = useCallback((driver: Driver, plate: string) => {
-    const newRecord: AttendanceRecord = {
-      id: `${Date.now()}-${driver.id}`,
-      driver,
-      checkinTime: new Date(),
-      checkoutTime: null,
-      vehiclePlate: plate,
-      returnInfoCompleted: false,
+        if (isDriverActive) {
+            // Es una salida
+            setAttendanceLog(prevLog =>
+                prevLog.map(record =>
+                    record.driver.id === foundDriver.id && record.checkoutTime === null
+                        ? { ...record, checkoutTime: now }
+                        : record
+                )
+            );
+            setActiveDriverIds(prevIds => {
+                const newIds = new Set(prevIds);
+                newIds.delete(foundDriver.id);
+                return newIds;
+            });
+            const message = t('app.scan.checkoutSuccess', { name: foundDriver.name });
+            setLastScanResult({ status: ScanStatus.INFO, message });
+            notificationService.sendNotification(`${t('app.notifications.checkout')}: ${foundDriver.name} (${foundDriver.company}) at ${now.toLocaleTimeString()}`);
+        } else {
+            // Es una entrada (desde el panel de admin, sin matrícula)
+            const newRecord: AttendanceRecord = {
+                driver: foundDriver,
+                checkinTime: now,
+                checkoutTime: null,
+            };
+            setAttendanceLog(prevLog => [newRecord, ...prevLog]);
+            setActiveDriverIds(prevIds => new Set(prevIds).add(foundDriver.id));
+            const message = t('app.scan.checkinSuccess', { name: foundDriver.name });
+            setLastScanResult({ status: ScanStatus.SUCCESS, message });
+            notificationService.sendNotification(`${t('app.notifications.checkin')}: ${foundDriver.name} (${foundDriver.company}) at ${now.toLocaleTimeString()}`);
+        }
     };
-    setAttendanceRecords(prev => [newRecord, ...prev]);
-    notificationService.sendNotification(`Check-in: ${driver.name} con matrícula ${plate}.`);
     
-    setScanResult({
-        status: ScanStatus.SUCCESS,
-        message: t('scanResult.checkinSuccess', { name: driver.name }),
-    });
-    resetScanResult();
-    // La vista ya es 'login', el componente Login se reiniciará por sí mismo.
-  }, [t, resetScanResult]);
-
-  const handleCheckOut = useCallback((driver: Driver) => {
-    const now = new Date();
-    setAttendanceRecords(prev => 
-      prev.map(rec => 
-        rec.driver.id === driver.id && rec.checkoutTime === null 
-          ? { ...rec, checkoutTime: now } 
-          : rec
-      )
-    );
-    notificationService.sendNotification(`Check-out: ${driver.name}.`);
-    setScanResult({
-        status: ScanStatus.SUCCESS,
-        message: t('scanResult.checkoutSuccess', { name: driver.name }),
-    });
-    resetScanResult();
-    // La vista ya es 'login', el componente Login se reiniciará por sí mismo.
-  }, [t, resetScanResult]);
-
-  const handleDriverIdentification = useCallback((id: string): { driver: Driver | null, isCheckedIn: boolean, error?: string } => {
-    const driver = drivers.find(d => d.id === id);
-    if (!driver) {
-      return { driver: null, isCheckedIn: false, error: t('login.errorNotFound', { id }) };
-    }
-    
-    const activeRecord = attendanceRecords.find(r => r.driver.id === id && r.checkoutTime === null);
-    return { driver, isCheckedIn: !!activeRecord, error: undefined };
-  }, [drivers, attendanceRecords, t]);
-  
-  const handleProfileAccess = (driver: Driver) => {
-    setActiveDriver(driver);
-    setView('driverDashboard');
-  };
-
-  const handleAdminAccess = () => {
-    setView('adminPanel');
-  };
-
-  const handleLogout = () => {
-    setActiveDriver(null);
-    setActiveSubcontractor(null);
-    setView('login');
-  };
-
-  const handleSubcontractorLogin = (username: string, password: string): Promise<void> => {
-      return new Promise((resolve, reject) => {
-          const user = subcontractorUsers.find(u => u.username.toLowerCase() === username.toLowerCase());
-          if (user && user.password === password) {
-              setActiveSubcontractor(user);
-              setView('subcontractorPanel');
-              setIsSubcontractorLoginOpen(false);
-              resolve();
-          } else {
-              reject(new Error(t('login.subcontractor.error')));
-          }
-      });
-  };
-
-  const handleUpdatePlate = (driverId: string, newPlate: string) => {
-    setDrivers(prev => prev.map(d => d.id === driverId ? { ...d, vehiclePlate: newPlate } : d));
-    // Also update plate in active check-in if exists
-    setAttendanceRecords(prev => prev.map(rec => 
-      rec.driver.id === driverId && rec.checkoutTime === null 
-        ? { ...rec, vehiclePlate: newPlate } 
-        : rec
-    ));
-  };
-  
-  const handleFileImport = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const text = event.target?.result as string;
-        const lines = text.split(/\r\n|\n/).filter(line => line.trim() !== '');
+    const handleDriverLogin = (id: string): boolean => {
+        const foundDriver = allDrivers.find(driver => driver.id === id);
+        if (!foundDriver) return false;
         
-        const newDrivers: Driver[] = lines.map((line, index) => {
-          const parts = line.split(',').map(part => part.trim());
-           if (parts.length < 3 || parts.length > 6) {
-            throw new Error(`Error en la línea ${index + 1}: Se esperan entre 3 y 6 columnas.`);
-          }
-          const [id, name, company, subcontractor = '', vehiclePlate = '', route = ''] = parts;
-          if (!id || !name || !company) {
-             throw new Error(`Error en la línea ${index + 1}: ID, Nombre y Empresa son obligatorios.`);
-          }
-          return { id, name, company, subcontractor, vehiclePlate, route };
-        });
-
-        setDrivers(newDrivers);
-        setScanResult({ status: ScanStatus.SUCCESS, message: t('adminPanel.importSuccess') });
-      } catch (error) {
-        const errorMessage = (error instanceof Error) ? error.message : t('adminPanel.importErrorFormat');
-        setScanResult({ status: ScanStatus.ERROR, message: errorMessage });
-      } finally {
-        resetScanResult();
-      }
+        setCurrentUser(foundDriver);
+        setView('plateEntry');
+        return true;
     };
-    reader.onerror = () => {
-        setScanResult({ status: ScanStatus.ERROR, message: t('adminPanel.importError') });
-        resetScanResult();
+
+    const handleAdminAccess = () => {
+        setView('admin');
     };
-    reader.readAsText(file);
-  };
 
-  const handleUpdateDriverRoute = (driverId: string, newRoute: string) => {
-    let driverName = '';
-    setDrivers(prev => prev.map(d => {
-      if (d.id === driverId) {
-        driverName = d.name;
-        return { ...d, route: newRoute };
-      }
-      return d;
-    }));
-    setScanResult({
-        status: ScanStatus.SUCCESS,
-        message: t('adminPanel.routeUpdateSuccess', { name: driverName })
-    });
-    resetScanResult();
-  };
+    const handleLogout = () => {
+        setCurrentUser(null);
+        setView('login');
+    };
 
-  const handleSaveReturnInfo = useCallback((info: Omit<ReturnInfo, 'recordedAt'>) => {
-    setReturnRecords(prev => [...prev, { ...info, recordedAt: new Date() }]);
-    setAttendanceRecords(prev => prev.map(rec => 
-      rec.id === info.attendanceRecordId 
-        ? { ...rec, returnInfoCompleted: true } 
-        : rec
-    ));
-     setScanResult({
-        status: ScanStatus.SUCCESS,
-        message: t('adminPanel.retourTournee.saveSuccess')
-    });
-    resetScanResult();
-  }, [t, resetScanResult]);
-
-  const handleSaveDepartureNotes = useCallback((attendanceRecordId: string, notes: string) => {
-    setAttendanceRecords(prev => prev.map(rec =>
-      rec.id === attendanceRecordId
-        ? { ...rec, departureNotes: notes }
-        : rec
-    ));
-    setScanResult({
-      status: ScanStatus.SUCCESS,
-      message: t('adminPanel.departChauffeur.saveSuccess')
-    });
-    resetScanResult();
-  }, [t, resetScanResult]);
-
-  const handleAddSubcontractorUser = (user: SubcontractorUser) => {
-      if (subcontractorUsers.some(u => u.username.toLowerCase() === user.username.toLowerCase())) {
-          setScanResult({ status: ScanStatus.ERROR, message: t('adminPanel.subcontractors.errorUserExists') });
-      } else {
-          setSubcontractorUsers(prev => [...prev, user]);
-          setScanResult({ status: ScanStatus.SUCCESS, message: t('adminPanel.subcontractors.userAdded') });
-      }
-      resetScanResult();
-  };
-
-  const handleUpdateSubcontractorPassword = (username: string, newPassword: string) => {
-      setSubcontractorUsers(prev => prev.map(u => u.username === username ? { ...u, password: newPassword } : u));
-      setScanResult({ status: ScanStatus.SUCCESS, message: t('adminPanel.subcontractors.passwordUpdated') });
-      resetScanResult();
-  };
-
-
-  if (isLoading) {
-    return <div className="min-h-screen flex justify-center items-center bg-gray-100"><p>{t('general.loading')}</p></div>;
-  }
-
-  const renderView = () => {
-    switch(view) {
-      case 'login':
-        return (
-          <div className="min-h-screen flex flex-col justify-center items-center p-4 bg-gray-800 bg-cover bg-center" style={{backgroundImage: "url('/background.jpg')"}}>
-            <div className="absolute top-8 text-center text-white">
-              <Clock />
-            </div>
-            <div className="w-full max-w-md">
-              <Login 
-                onIdentifyDriver={handleDriverIdentification} 
-                onAdminAccess={handleAdminAccess}
-                onProfileAccess={handleProfileAccess}
-                onCheckIn={handleCheckIn}
-                onCheckOut={handleCheckOut}
-                onSubcontractorAccessRequest={() => setIsSubcontractorLoginOpen(true)}
-              />
-              <ScanResultDisplay result={scanResult} />
-            </div>
-             <SubcontractorLogin
-                isOpen={isSubcontractorLoginOpen}
-                onClose={() => setIsSubcontractorLoginOpen(false)}
-                onLogin={handleSubcontractorLogin}
-             />
-          </div>
+    const handleUpdatePlate = (driverId: string, newPlate: string) => {
+        setAllDrivers(prevDrivers =>
+            prevDrivers.map(driver =>
+                driver.id === driverId ? { ...driver, vehiclePlate: newPlate } : driver
+            )
         );
-      case 'adminPanel':
-        return (
-          <div className="bg-gray-100 min-h-screen">
-             <AdminPanel 
-               drivers={drivers} 
-               records={attendanceRecords} 
-               returnRecords={returnRecords}
-               subcontractorUsers={subcontractorUsers}
-               onLogout={handleLogout} 
-               onFileImport={handleFileImport}
-               onUpdateDriverRoute={handleUpdateDriverRoute}
-               onSaveReturnInfo={handleSaveReturnInfo}
-               onSaveDepartureNotes={handleSaveDepartureNotes}
-               onAddSubcontractorUser={handleAddSubcontractorUser}
-               onUpdateSubcontractorPassword={handleUpdateSubcontractorPassword}
-              />
-          </div>
-        );
-      case 'subcontractorPanel':
-        if (!activeSubcontractor) {
-            setView('login');
-            return null;
+        console.log(`Matrícula actualizada para ${driverId}: ${newPlate}`);
+    };
+
+    const handleLoginAndCheckIn = (plate: string) => {
+        if (!currentUser) return;
+
+        handleUpdatePlate(currentUser.id, plate);
+
+        const now = new Date();
+        if (activeDriverIds.has(currentUser.id)) {
+            console.warn("El chofer ya tiene una sesión activa. Omitiendo nueva entrada.");
+            setView('driver');
+            return;
         }
-        const filteredDrivers = drivers.filter(d => d.subcontractor === activeSubcontractor.companyName);
-        const filteredDriverIds = new Set(filteredDrivers.map(d => d.id));
-        const filteredRecords = attendanceRecords.filter(r => filteredDriverIds.has(r.driver.id));
-        return (
-            <SubcontractorPanel
-                subcontractor={activeSubcontractor}
-                drivers={filteredDrivers}
-                records={filteredRecords}
-                onLogout={handleLogout}
-            />
-        );
-      case 'driverDashboard':
-        if (!activeDriver) {
-            setView('login');
-            return null;
+
+        const newRecord: AttendanceRecord = {
+            driver: currentUser,
+            checkinTime: now,
+            checkoutTime: null,
+            vehiclePlate: plate,
+        };
+        setAttendanceLog(prevLog => [newRecord, ...prevLog]);
+        setActiveDriverIds(prevIds => new Set(prevIds).add(currentUser.id));
+
+        notificationService.sendNotification(`${t('app.notifications.checkin')}: ${currentUser.name} (${currentUser.company}) with plate ${plate} at ${now.toLocaleTimeString()}`);
+        
+        setView('driver');
+    };
+
+    const handleSyncDrivers = async () => {
+        setIsSyncing(true);
+        setLastScanResult({ status: ScanStatus.INFO, message: t('app.sync.syncing') });
+        try {
+            const updatedDrivers = await driverService.scrapeDrivers();
+            setAllDrivers(updatedDrivers);
+            setLastScanResult({ status: ScanStatus.SUCCESS, message: t('app.sync.success', { count: updatedDrivers.length }) });
+        } catch (error) {
+            console.error("Error al sincronizar los choferes:", error);
+            setLastScanResult({ status: ScanStatus.ERROR, message: t('app.sync.error') });
+        } finally {
+            setIsSyncing(false);
         }
+    };
+
+    if (loading && view === 'login') {
         return (
-            <div className="min-h-screen bg-gray-800 bg-cover bg-center" style={{backgroundImage: "url('/background.jpg')"}}>
+            <div className="flex items-center justify-center h-screen">
+                <div className="bg-black/50 p-6 rounded-lg shadow-xl">
+                    <p className="text-white text-lg animate-pulse">{t('general.loadingApp')}</p>
+                </div>
+            </div>
+        );
+    }
+    
+    switch (view) {
+        case 'plateEntry':
+            return currentUser ? (
+                <VehiclePlateEntry 
+                    driver={currentUser}
+                    onPlateSubmit={handleLoginAndCheckIn}
+                />
+            ) : null;
+        case 'driver':
+            return currentUser ? (
                 <DriverDashboard 
-                    driver={activeDriver} 
-                    records={attendanceRecords}
+                    driver={currentUser}
+                    records={attendanceLog}
                     onUpdatePlate={handleUpdatePlate}
                     onLogout={handleLogout}
                 />
-            </div>
-        );
+            ) : null;
+        case 'admin':
+            return (
+                <AdminPanel 
+                    allDrivers={allDrivers}
+                    attendanceLog={attendanceLog}
+                    onScan={handleScan}
+                    lastScanResult={lastScanResult}
+                    loading={loading}
+                    onSyncDrivers={handleSyncDrivers}
+                    isSyncing={isSyncing}
+                />
+            );
+        case 'login':
+        default:
+            return (
+                <Login 
+                    onDriverLogin={handleDriverLogin}
+                    onAdminAccess={handleAdminAccess}
+                />
+            );
     }
-  }
-
-  return <>{renderView()}</>;
 };
 
 export default App;

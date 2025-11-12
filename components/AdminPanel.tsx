@@ -1,140 +1,143 @@
 import React, { useState, useRef } from 'react';
-import { Driver, AttendanceRecord, ReturnInfo, SubcontractorUser } from '../types';
-import CheckinLog from './CheckinLog';
-import Reports from './Reports';
-import DriverList from './DriverList';
-import RetourTournee from './RetourTournee';
-import DailyReport from './DailyReport';
-import DepartChauffeur from './DepartChauffeur';
-import SubcontractorManagement from './SubcontractorManagement';
+import { Driver, AttendanceRecord, type ScanResult as ScanResultType } from '../types';
 import { useTranslation } from '../contexts/LanguageContext';
+import Clock from './Clock';
+import ScanResult from './ScanResult';
+import CheckinLog from './CheckinLog';
+import DriverList from './DriverList';
+import Reports from './Reports';
 import LanguageSwitcher from './LanguageSwitcher';
 
 interface AdminPanelProps {
-  drivers: Driver[];
-  records: AttendanceRecord[];
-  returnRecords: ReturnInfo[];
-  subcontractorUsers: SubcontractorUser[];
-  onLogout: () => void;
-  onFileImport: (file: File) => void;
-  onUpdateDriverRoute: (driverId: string, newRoute: string) => void;
-  onSaveReturnInfo: (info: Omit<ReturnInfo, 'recordedAt'>) => void;
-  onSaveDepartureNotes: (attendanceRecordId: string, notes: string) => void;
-  onAddSubcontractorUser: (user: SubcontractorUser) => void;
-  onUpdateSubcontractorPassword: (username: string, newPassword: string) => void;
+    allDrivers: Driver[];
+    attendanceLog: AttendanceRecord[];
+    onScan: (barcode: string) => void;
+    lastScanResult: ScanResultType;
+    loading: boolean;
+    onSyncDrivers: () => void;
+    isSyncing: boolean;
 }
 
-type Tab = 'departChauffeur' | 'retourTournee' | 'dailyReport' | 'log' | 'reports' | 'drivers' | 'subcontractors';
-
-const LogoutIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 me-2">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
+const BarcodeIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8 text-gray-400">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 4.5A.75.75 0 0 1 4.5 3.75h15a.75.75 0 0 1 .75.75v15a.75.75 0 0 1-.75.75h-15a.75.75 0 0 1-.75-.75v-15Zm.75 0v15h13.5v-15h-13.5ZM8.25 6h.75v12h-.75V6Zm2.25 0h.75v12h-.75V6Zm2.25 0h.75v12h-.75V6Zm2.25 0h.75v12h-.75V6Z" />
     </svg>
 );
 
-const ImportIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 me-2">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0l-3.75 3.75M12 9.75l3.75 3.75M3 13.5V18a2.25 2.25 0 002.25 2.25h13.5A2.25 2.25 0 0021 18v-4.5M3 13.5V6a2.25 2.25 0 012.25-2.25h1.5A2.25 2.25 0 019 6v1.5h6V6a2.25 2.25 0 012.25-2.25h1.5A2.25 2.25 0 0121 6v7.5" />
-    </svg>
-);
-
-
-const AdminPanel: React.FC<AdminPanelProps> = ({ drivers, records, returnRecords, subcontractorUsers, onLogout, onFileImport, onUpdateDriverRoute, onSaveReturnInfo, onSaveDepartureNotes, onAddSubcontractorUser, onUpdateSubcontractorPassword }) => {
+const AdminPanel: React.FC<AdminPanelProps> = ({ allDrivers, attendanceLog, onScan, lastScanResult, loading, onSyncDrivers, isSyncing }) => {
     const { t } = useTranslation();
-    const [activeTab, setActiveTab] = useState<Tab>('departChauffeur');
-    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [barcode, setBarcode] = useState('');
+    const [activeTab, setActiveTab] = useState<'log' | 'drivers' | 'reports'>('log');
+    
+    const barcodeInputRef = useRef<HTMLInputElement>(null);
 
-    const handleImportClick = () => {
-        fileInputRef.current?.click();
-    };
-
-    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (file) {
-            onFileImport(file);
-        }
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-        }
+    const handleScanSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        onScan(barcode);
+        setBarcode('');
+        barcodeInputRef.current?.focus();
     };
     
-    const TabButton: React.FC<{ tab: Tab, label: string }> = ({ tab, label }) => (
-        <button
-            onClick={() => setActiveTab(tab)}
-            className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === tab ? 'bg-blue-600 text-white shadow' : 'text-gray-600 hover:bg-gray-200'}`}
-        >
-            {label}
-        </button>
-    );
-
-    const renderContent = () => {
-        switch (activeTab) {
-            case 'departChauffeur':
-                return <DepartChauffeur records={records} onSave={onSaveDepartureNotes} />;
-            case 'retourTournee':
-                return <RetourTournee records={records} onSave={onSaveReturnInfo} />;
-            case 'dailyReport':
-                return <DailyReport records={records} returnRecords={returnRecords} />;
-            case 'log':
-                return <CheckinLog records={records} />;
-            case 'reports':
-                return <Reports drivers={drivers} records={records} />;
-            case 'drivers':
-                return <DriverList drivers={drivers} onUpdateDriverRoute={onUpdateDriverRoute} />;
-            case 'subcontractors':
-                return <SubcontractorManagement users={subcontractorUsers} onAddUser={onAddSubcontractorUser} onUpdatePassword={onUpdateSubcontractorPassword} />;
-            default:
-                return null;
-        }
-    };
+    const todaysRecords = attendanceLog.filter(record => {
+        const today = new Date();
+        const recordDate = record.checkinTime;
+        return recordDate.getDate() === today.getDate() &&
+               recordDate.getMonth() === today.getMonth() &&
+               recordDate.getFullYear() === today.getFullYear();
+    });
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8 h-screen flex flex-col">
-            <header className="mb-6 pb-4 border-b border-gray-200">
+        <div className="min-h-screen p-4 sm:p-6 lg:p-8 flex flex-col">
+            <header className="mb-6">
                 <div className="flex justify-between items-center">
-                    <h1 className="text-2xl font-bold text-gray-800">{t('adminPanel.title')}</h1>
-                    <div className="flex items-center space-x-4">
-                        <LanguageSwitcher />
-                        <button
-                            onClick={onLogout}
-                            className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center"
-                        >
-                            <LogoutIcon />
-                            {t('adminPanel.logoutButton')}
-                        </button>
+                    <div className="flex-1 text-center">
+                        <h1 className="text-4xl font-bold text-white text-shadow-lg">{t('adminPanel.title')}</h1>
+                        <p className="text-lg text-gray-200 text-shadow">{t('adminPanel.subtitle')}</p>
                     </div>
-                </div>
-                 <div className="flex justify-between items-center mt-4">
-                    <div className="flex flex-wrap gap-1 border border-gray-200 rounded-lg p-1 bg-gray-100">
-                        <TabButton tab="departChauffeur" label={t('adminPanel.tabs.departChauffeur')} />
-                        <TabButton tab="retourTournee" label={t('adminPanel.tabs.retourTournee')} />
-                        <TabButton tab="dailyReport" label={t('adminPanel.tabs.dailyReport')} />
-                        <TabButton tab="log" label={t('adminPanel.tabs.log')} />
-                        <TabButton tab="reports" label={t('adminPanel.tabs.reports')} />
-                        <TabButton tab="drivers" label={t('adminPanel.tabs.drivers')} />
-                        <TabButton tab="subcontractors" label={t('adminPanel.tabs.subcontractors')} />
-                    </div>
-                    <div>
-                        <input
-                            type="file"
-                            ref={fileInputRef}
-                            onChange={handleFileChange}
-                            className="hidden"
-                            accept=".csv"
-                        />
-                        <button
-                            onClick={handleImportClick}
-                            className="bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-800 flex items-center"
-                        >
-                           <ImportIcon />
-                           {t('adminPanel.importFromCsv')}
-                        </button>
-                         <p className="text-xs text-gray-500 mt-1 text-end">{t('adminPanel.csvFormatInfo')}</p>
+                    <div className="flex-shrink-0">
+                         <LanguageSwitcher />
                     </div>
                 </div>
             </header>
-            <main className="flex-grow bg-white/80 p-6 rounded-lg shadow-inner overflow-hidden">
-                {renderContent()}
+            <main className="flex-grow grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Columna Izquierda: Escaneo y Reloj */}
+                <div className="bg-white/90 backdrop-blur-sm p-6 rounded-lg shadow-xl flex flex-col justify-center space-y-8">
+                    <Clock />
+                    <div className="w-full max-w-md mx-auto">
+                        <form onSubmit={handleScanSubmit}>
+                            <label htmlFor="barcode-input" className="block text-sm font-medium text-gray-700 mb-2 text-center">
+                                {t('adminPanel.scanLabel')}
+                            </label>
+                            <div className="relative">
+                                <div className="absolute inset-y-0 start-0 ps-3 flex items-center pointer-events-none">
+                                    <BarcodeIcon />
+                                </div>
+                                <input
+                                    ref={barcodeInputRef}
+                                    id="barcode-input"
+                                    type="text"
+                                    value={barcode}
+                                    onChange={(e) => setBarcode(e.target.value)}
+                                    placeholder={t('general.waitingForCode')}
+                                    className="w-full ps-14 pe-4 py-3 text-lg border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                    autoFocus
+                                />
+                            </div>
+                        </form>
+                        <ScanResult result={lastScanResult} />
+                    </div>
+                </div>
+
+                {/* Columna Derecha: Registros y Lista */}
+                <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl flex flex-col">
+                    <div className="p-6">
+                        <div className="mb-4 border-b border-gray-200/80">
+                            <nav className="-mb-px flex space-x-4 rtl:space-x-reverse" aria-label="Tabs">
+                                <button
+                                    onClick={() => setActiveTab('log')}
+                                    className={`${activeTab === 'log' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+                                >
+                                    {t('adminPanel.tabs.activity')}
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('reports')}
+                                    className={`${activeTab === 'reports' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+                                >
+                                    {t('adminPanel.tabs.reports')}
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('drivers')}
+                                    className={`${activeTab === 'drivers' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+                                >
+                                    {t('adminPanel.tabs.driverList')}
+                                </button>
+                            </nav>
+                        </div>
+                    </div>
+                    <div className="flex-grow px-6 pb-6">
+                        {loading ? (
+                            <div className="flex items-center justify-center h-full">
+                                <p className="text-gray-500">{t('adminPanel.loadingDrivers')}</p>
+                            </div>
+                        ) : (
+                            <>
+                                <div className={activeTab === 'log' ? 'block h-full' : 'hidden'}>
+                                    <CheckinLog records={todaysRecords} />
+                                </div>
+                                <div className={activeTab === 'drivers' ? 'block h-full' : 'hidden'}>
+                                    <DriverList 
+                                        drivers={allDrivers} 
+                                        onSync={onSyncDrivers} 
+                                        isSyncing={isSyncing} 
+                                    />
+                                </div>
+                                 <div className={activeTab === 'reports' ? 'block h-full' : 'hidden'}>
+                                    <Reports drivers={allDrivers} records={attendanceLog} />
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </div>
             </main>
         </div>
     );

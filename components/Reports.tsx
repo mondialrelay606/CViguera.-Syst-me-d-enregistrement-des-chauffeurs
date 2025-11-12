@@ -58,12 +58,10 @@ const Reports: React.FC<ReportsProps> = ({ drivers, records }) => {
             .map(rec => ({
                 driverName: rec.driver.name,
                 driverCompany: rec.driver.company,
-                driverSubcontractor: rec.driver.subcontractor || t('general.notAvailable'),
                 checkinTime: rec.checkinTime.toLocaleString(language),
                 checkoutTime: rec.checkoutTime!.toLocaleString(language),
                 duration: calculateDuration(rec.checkinTime, rec.checkoutTime!),
                 vehiclePlate: rec.vehiclePlate || t('general.notAvailable'),
-                route: rec.driver.route || t('general.notAvailable'),
             })).sort((a,b) => new Date(b.checkinTime).getTime() - new Date(a.checkinTime).getTime());
     }, [records, startDate, endDate, selectedDriverId, language, t]);
 
@@ -115,8 +113,6 @@ const Reports: React.FC<ReportsProps> = ({ drivers, records }) => {
                             <thead className="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0">
                                 <tr>
                                     <th scope="col" className="px-6 py-3">{t('reports.headers.driver')}</th>
-                                    <th scope="col" className="px-6 py-3">{t('reports.headers.subcontractor')}</th>
-                                    <th scope="col" className="px-6 py-3">{t('reports.headers.route')}</th>
                                     <th scope="col" className="px-6 py-3">{t('reports.headers.plate')}</th>
                                     <th scope="col" className="px-6 py-3">{t('reports.headers.checkin')}</th>
                                     <th scope="col" className="px-6 py-3">{t('reports.headers.checkout')}</th>
@@ -127,8 +123,6 @@ const Reports: React.FC<ReportsProps> = ({ drivers, records }) => {
                                 {reportData.map((row, index) => (
                                     <tr key={index} className="bg-white/70 border-b border-gray-200/50 hover:bg-gray-50/70">
                                         <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">{row.driverName} <span className="text-gray-500">({row.driverCompany})</span></td>
-                                        <td className="px-6 py-4">{row.driverSubcontractor}</td>
-                                        <td className="px-6 py-4">{row.route}</td>
                                         <td className="px-6 py-4 font-mono text-xs">{row.vehiclePlate}</td>
                                         <td className="px-6 py-4">{row.checkinTime}</td>
                                         <td className="px-6 py-4">{row.checkoutTime}</td>
