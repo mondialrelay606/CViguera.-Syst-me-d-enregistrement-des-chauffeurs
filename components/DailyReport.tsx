@@ -31,9 +31,10 @@ const DailyReport: React.FC<DailyReportProps> = ({ records, returnRecords }) => 
     const [selectedDate, setSelectedDate] = useState(formatDateForInput(new Date()));
 
     const reportData: DailyReportRow[] = useMemo(() => {
-        // Crea las fechas en la zona horaria local del usuario para evitar errores de "off-by-one-day".
-        const startOfDay = new Date(`${selectedDate}T00:00:00`);
-        const endOfDay = new Date(`${selectedDate}T23:59:59.999`);
+        const targetDate = new Date(selectedDate);
+        targetDate.setMinutes(targetDate.getMinutes() + targetDate.getTimezoneOffset()); // Adjust for timezone
+        const startOfDay = new Date(targetDate.setHours(0, 0, 0, 0));
+        const endOfDay = new Date(targetDate.setHours(23, 59, 59, 999));
         
         const todaysReturnRecords = returnRecords.filter(rr => {
             const recordedAt = new Date(rr.recordedAt);

@@ -2,18 +2,6 @@ import { AttendanceRecord, ReportRow, DailyReportRow } from '../types';
 
 type Translator = (key: string, values?: { [key: string]: string | number }) => string;
 
-/**
- * Escapa un campo para su uso en un archivo CSV.
- * Envuelve el campo entre comillas dobles y escapa cualquier comilla doble interna.
- * @param field El valor del campo a escapar.
- */
-const escapeCsvField = (field: any): string => {
-  const stringField = String(field ?? ''); // Maneja null/undefined
-  const escapedField = stringField.replace(/"/g, '""');
-  return `"${escapedField}"`;
-};
-
-
 export const exportActivityLogToCSV = (records: AttendanceRecord[], t: Translator, filename: string = 'fichajes_actividad.csv'): void => {
   if (records.length === 0) {
     alert(t('export.noActivity'));
@@ -44,9 +32,9 @@ export const exportActivityLogToCSV = (records: AttendanceRecord[], t: Translato
     record.driver.route || '',
     record.driver.id,
     record.vehiclePlate || ''
-  ].map(escapeCsvField)); // Usar el helper para escapar
+  ].map(field => `"${field}"`)); // Wrap fields in quotes
 
-  let csvContent = "data:text/csv;charset=utf-8,\uFEFF" // BOM para Excel
+  let csvContent = "data:text/csv;charset=utf-8," 
     + headers.join(',') + '\n' 
     + rows.map(e => e.join(',')).join('\n');
 
@@ -80,18 +68,18 @@ export const exportReportToCSV = (records: ReportRow[], t: Translator, filename:
   ];
   
   const rows = records.map(record => [
-    record.driverName,
-    record.driverCompany,
-    record.driverSubcontractor,
-    record.route,
-    record.checkinTime,
-    record.checkoutTime,
-    record.duration,
-    record.vehiclePlate,
-    record.uniformVerified,
-  ].map(escapeCsvField));
+    `"${record.driverName}"`,
+    `"${record.driverCompany}"`,
+    `"${record.driverSubcontractor}"`,
+    `"${record.route}"`,
+    `"${record.checkinTime}"`,
+    `"${record.checkoutTime}"`,
+    `"${record.duration}"`,
+    `"${record.vehiclePlate}"`,
+    `"${record.uniformVerified}"`,
+  ]);
 
-  let csvContent = "data:text/csv;charset=utf-8,\uFEFF" // BOM para Excel
+  let csvContent = "data:text/csv;charset=utf-8,"
     + headers.join(',') + '\n'
     + rows.map(e => e.join(',')).join('\n');
 
@@ -125,19 +113,19 @@ export const exportDailyReportToCSV = (records: DailyReportRow[], t: Translator,
   ];
 
   const rows = records.map(record => [
-    record.driverName,
-    record.driverCompany,
-    record.driverSubcontractor,
-    record.checkoutTime ? record.checkoutTime.toLocaleTimeString('es-ES') : '-',
-    record.recordedAt.toLocaleString('es-ES'),
-    record.closedRelays,
+    `"${record.driverName}"`,
+    `"${record.driverCompany}"`,
+    `"${record.driverSubcontractor}"`,
+    `"${record.checkoutTime ? record.checkoutTime.toLocaleTimeString('es-ES') : '-'}"`,
+    `"${record.recordedAt.toLocaleString('es-ES')}"`,
+    `"${record.closedRelays}"`,
     record.unidentifiedPackages,
     record.undeliveredPackages,
-    record.saturatedLockers,
-    record.notes || ''
-  ].map(escapeCsvField));
+    `"${record.saturatedLockers}"`,
+    `"${record.notes || ''}"`
+  ]);
 
-  let csvContent = "data:text/csv;charset=utf-8,\uFEFF" // BOM para Excel
+  let csvContent = "data:text/csv;charset=utf-8,"
     + headers.join(',') + '\n'
     + rows.map(e => e.join(',')).join('\n');
   
