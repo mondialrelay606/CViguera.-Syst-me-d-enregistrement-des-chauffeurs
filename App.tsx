@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Driver, AttendanceRecord, ScanResult, ScanStatus, ReturnInfo, SubcontractorUser } from './types';
 import { driverService } from './services/driverService';
 import { notificationService } from './services/notificationService';
@@ -12,20 +12,6 @@ import SubcontractorLogin from './components/SubcontractorLogin';
 import SubcontractorPanel from './components/SubcontractorPanel';
 
 type View = 'login' | 'driverDashboard' | 'adminPanel' | 'subcontractorPanel';
-
-// --- Custom Hook for Debounced Effect ---
-const useDebouncedEffect = (callback: () => void, delay: number, deps: React.DependencyList) => {
-    const isFirstRun = useRef(true);
-    useEffect(() => {
-        if (isFirstRun.current) {
-            isFirstRun.current = false;
-            return;
-        }
-        const handler = setTimeout(callback, delay);
-        return () => clearTimeout(handler);
-    }, [...deps, delay]);
-};
-
 
 const App: React.FC = () => {
   const { t } = useTranslation();
@@ -80,32 +66,21 @@ const App: React.FC = () => {
       .finally(() => setIsLoading(false));
   }, []);
 
-  // --- Debounced localStorage saving ---
-  useDebouncedEffect(() => {
+  useEffect(() => {
     try {
       localStorage.setItem('attendanceRecords', JSON.stringify(attendanceRecords));
     } catch (error) {
       console.error("Error saving attendance records to localStorage", error);
     }
-  }, 500, [attendanceRecords]);
+  }, [attendanceRecords]);
 
-  useDebouncedEffect(() => {
+  useEffect(() => {
       try {
           localStorage.setItem('returnRecords', JSON.stringify(returnRecords));
       } catch (error) {
           console.error("Error saving return records to localStorage", error);
       }
-  }, 500, [returnRecords]);
-  
-  useDebouncedEffect(() => {
-    if (!isLoading) { // Don't save initial empty array while loading
-      try {
-        localStorage.setItem('drivers', JSON.stringify(drivers));
-      } catch (error) {
-        console.error("Error saving drivers to localStorage", error);
-      }
-    }
-  }, 500, [drivers, isLoading]);
+  }, [returnRecords]);
 
   const resetScanResult = useCallback(() => {
     setTimeout(() => setScanResult({ status: ScanStatus.IDLE, message: '' }), 5000);
@@ -119,7 +94,6 @@ const App: React.FC = () => {
       checkoutTime: null,
       vehiclePlate: plate,
       returnInfoCompleted: false,
-      uniformVerified: false,
     };
     setAttendanceRecords(prev => [newRecord, ...prev]);
     notificationService.sendNotification(`Check-in: ${driver.name} con matrícula ${plate}.`);
@@ -129,6 +103,7 @@ const App: React.FC = () => {
         message: t('scanResult.checkinSuccess', { name: driver.name }),
     });
     resetScanResult();
+    // La vista ya es 'login', el componente Login se reiniciará por sí mismo.
   }, [t, resetScanResult]);
 
   const handleCheckOut = useCallback((driver: Driver) => {
@@ -146,6 +121,7 @@ const App: React.FC = () => {
         message: t('scanResult.checkoutSuccess', { name: driver.name }),
     });
     resetScanResult();
+    // La vista ya es 'login', el componente Login se reiniciará por sí mismo.
   }, [t, resetScanResult]);
 
   const handleDriverIdentification = useCallback((id: string): { driver: Driver | null, isCheckedIn: boolean, error?: string } => {
@@ -158,22 +134,22 @@ const App: React.FC = () => {
     return { driver, isCheckedIn: !!activeRecord, error: undefined };
   }, [drivers, attendanceRecords, t]);
   
-  const handleProfileAccess = useCallback((driver: Driver) => {
+  const handleProfileAccess = (driver: Driver) => {
     setActiveDriver(driver);
     setView('driverDashboard');
-  }, []);
+  };
 
-  const handleAdminAccess = useCallback(() => {
+  const handleAdminAccess = () => {
     setView('adminPanel');
-  }, []);
+  };
 
-  const handleLogout = useCallback(() => {
+  const handleLogout = () => {
     setActiveDriver(null);
     setActiveSubcontractor(null);
     setView('login');
-  }, []);
+  };
 
-  const handleSubcontractorLogin = useCallback((username: string, password: string): Promise<void> => {
+  const handleSubcontractorLogin = (username: string, password: string): Promise<void> => {
       return new Promise((resolve, reject) => {
           const user = subcontractorUsers.find(u => u.username.toLowerCase() === username.toLowerCase());
           if (user && user.password === password) {
@@ -185,18 +161,19 @@ const App: React.FC = () => {
               reject(new Error(t('login.subcontractor.error')));
           }
       });
-  }, [subcontractorUsers, t]);
+  };
 
-  const handleUpdatePlate = useCallback((driverId: string, newPlate: string) => {
+  const handleUpdatePlate = (driverId: string, newPlate: string) => {
     setDrivers(prev => prev.map(d => d.id === driverId ? { ...d, vehiclePlate: newPlate } : d));
+    // Also update plate in active check-in if exists
     setAttendanceRecords(prev => prev.map(rec => 
       rec.driver.id === driverId && rec.checkoutTime === null 
         ? { ...rec, vehiclePlate: newPlate } 
         : rec
     ));
-  }, []);
+  };
   
-  const handleFileImport = useCallback((file: File) => {
+  const handleFileImport = (file: File) => {
     const reader = new FileReader();
     reader.onload = (event) => {
       try {
@@ -229,9 +206,9 @@ const App: React.FC = () => {
         resetScanResult();
     };
     reader.readAsText(file);
-  }, [t, resetScanResult]);
+  };
 
-  const handleUpdateDriverRoute = useCallback((driverId: string, newRoute: string) => {
+  const handleUpdateDriverRoute = (driverId: string, newRoute: string) => {
     let driverName = '';
     setDrivers(prev => prev.map(d => {
       if (d.id === driverId) {
@@ -245,7 +222,7 @@ const App: React.FC = () => {
         message: t('adminPanel.routeUpdateSuccess', { name: driverName })
     });
     resetScanResult();
-  }, [t, resetScanResult]);
+  };
 
   const handleSaveReturnInfo = useCallback((info: Omit<ReturnInfo, 'recordedAt'>) => {
     setReturnRecords(prev => [...prev, { ...info, recordedAt: new Date() }]);
@@ -274,23 +251,7 @@ const App: React.FC = () => {
     resetScanResult();
   }, [t, resetScanResult]);
 
-  const handleVerifyUniform = useCallback((attendanceRecordId: string) => {
-    let driverName = '';
-    setAttendanceRecords(prev => prev.map(rec => {
-        if (rec.id === attendanceRecordId) {
-            driverName = rec.driver.name;
-            return { ...rec, uniformVerified: true };
-        }
-        return rec;
-    }));
-    setScanResult({
-        status: ScanStatus.SUCCESS,
-        message: t('adminPanel.departChauffeur.verifySuccess', { name: driverName })
-    });
-    resetScanResult();
-  }, [t, resetScanResult]);
-
-  const handleAddSubcontractorUser = useCallback((user: SubcontractorUser) => {
+  const handleAddSubcontractorUser = (user: SubcontractorUser) => {
       if (subcontractorUsers.some(u => u.username.toLowerCase() === user.username.toLowerCase())) {
           setScanResult({ status: ScanStatus.ERROR, message: t('adminPanel.subcontractors.errorUserExists') });
       } else {
@@ -298,25 +259,13 @@ const App: React.FC = () => {
           setScanResult({ status: ScanStatus.SUCCESS, message: t('adminPanel.subcontractors.userAdded') });
       }
       resetScanResult();
-  }, [subcontractorUsers, t, resetScanResult]);
+  };
 
-  const handleUpdateSubcontractorPassword = useCallback((username: string, newPassword: string) => {
+  const handleUpdateSubcontractorPassword = (username: string, newPassword: string) => {
       setSubcontractorUsers(prev => prev.map(u => u.username === username ? { ...u, password: newPassword } : u));
       setScanResult({ status: ScanStatus.SUCCESS, message: t('adminPanel.subcontractors.passwordUpdated') });
       resetScanResult();
-  }, [t, resetScanResult]);
-
-  // Memoize data for subcontractor panel to avoid re-calculations on every render
-  const subcontractorDrivers = useMemo(() => {
-      if (!activeSubcontractor) return [];
-      return drivers.filter(d => d.subcontractor === activeSubcontractor.companyName);
-  }, [activeSubcontractor, drivers]);
-
-  const subcontractorRecords = useMemo(() => {
-      if (!activeSubcontractor) return [];
-      const filteredDriverIds = new Set(subcontractorDrivers.map(d => d.id));
-      return attendanceRecords.filter(r => filteredDriverIds.has(r.driver.id));
-  }, [activeSubcontractor, attendanceRecords, subcontractorDrivers]);
+  };
 
 
   if (isLoading) {
@@ -362,7 +311,6 @@ const App: React.FC = () => {
                onUpdateDriverRoute={handleUpdateDriverRoute}
                onSaveReturnInfo={handleSaveReturnInfo}
                onSaveDepartureNotes={handleSaveDepartureNotes}
-               onVerifyUniform={handleVerifyUniform}
                onAddSubcontractorUser={handleAddSubcontractorUser}
                onUpdateSubcontractorPassword={handleUpdateSubcontractorPassword}
               />
@@ -373,11 +321,14 @@ const App: React.FC = () => {
             setView('login');
             return null;
         }
+        const filteredDrivers = drivers.filter(d => d.subcontractor === activeSubcontractor.companyName);
+        const filteredDriverIds = new Set(filteredDrivers.map(d => d.id));
+        const filteredRecords = attendanceRecords.filter(r => filteredDriverIds.has(r.driver.id));
         return (
             <SubcontractorPanel
                 subcontractor={activeSubcontractor}
-                drivers={subcontractorDrivers}
-                records={subcontractorRecords}
+                drivers={filteredDrivers}
+                records={filteredRecords}
                 onLogout={handleLogout}
             />
         );

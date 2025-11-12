@@ -5,10 +5,9 @@ import { useTranslation } from '../contexts/LanguageContext';
 interface DriverListProps {
   drivers: Driver[];
   onUpdateDriverRoute: (driverId: string, newRoute: string) => void;
-  canEdit?: boolean;
 }
 
-const DriverList: React.FC<DriverListProps> = ({ drivers, onUpdateDriverRoute, canEdit = true }) => {
+const DriverList: React.FC<DriverListProps> = ({ drivers, onUpdateDriverRoute }) => {
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const [editingDriverId, setEditingDriverId] = useState<string | null>(null);
@@ -71,7 +70,7 @@ const DriverList: React.FC<DriverListProps> = ({ drivers, onUpdateDriverRoute, c
                   <th scope="col" className="px-6 py-3">{t('driverList.headers.plate')}</th>
                   <th scope="col" className="px-6 py-3">{t('driverList.headers.route')}</th>
                   <th scope="col" className="px-6 py-3">{t('driverList.headers.id')}</th>
-                  {canEdit && <th scope="col" className="px-6 py-3 text-end">{t('driverList.headers.actions')}</th>}
+                  <th scope="col" className="px-6 py-3 text-end">{t('driverList.headers.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -82,7 +81,7 @@ const DriverList: React.FC<DriverListProps> = ({ drivers, onUpdateDriverRoute, c
                     <td className="px-6 py-4">{driver.subcontractor || t('general.notAvailable')}</td>
                     <td className="px-6 py-4 font-mono text-xs">{driver.vehiclePlate || t('general.notAvailable')}</td>
                     <td className="px-6 py-4">
-                      {editingDriverId === driver.id && canEdit ? (
+                      {editingDriverId === driver.id ? (
                         <input
                           type="text"
                           value={editingRoute}
@@ -95,18 +94,16 @@ const DriverList: React.FC<DriverListProps> = ({ drivers, onUpdateDriverRoute, c
                       )}
                     </td>
                     <td className="px-6 py-4 font-mono text-xs">{driver.id}</td>
-                    {canEdit && (
-                        <td className="px-6 py-4 text-end">
-                          {editingDriverId === driver.id ? (
-                            <div className="flex items-center justify-end space-x-2">
-                               <button onClick={handleSave} className="text-green-600 hover:text-green-900 font-medium">{t('general.save')}</button>
-                               <button onClick={handleCancel} className="text-red-600 hover:text-red-900 font-medium">{t('general.cancel')}</button>
-                            </div>
-                          ) : (
-                            <button onClick={() => handleEdit(driver)} className="text-blue-600 hover:text-blue-900 font-medium">{t('general.edit')}</button>
-                          )}
-                        </td>
-                    )}
+                    <td className="px-6 py-4 text-end">
+                      {editingDriverId === driver.id ? (
+                        <div className="flex items-center justify-end space-x-2">
+                           <button onClick={handleSave} className="text-green-600 hover:text-green-900 font-medium">{t('general.save')}</button>
+                           <button onClick={handleCancel} className="text-red-600 hover:text-red-900 font-medium">{t('general.cancel')}</button>
+                        </div>
+                      ) : (
+                        <button onClick={() => handleEdit(driver)} className="text-blue-600 hover:text-blue-900 font-medium">{t('general.edit')}</button>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>

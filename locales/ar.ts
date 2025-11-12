@@ -10,8 +10,6 @@ export default {
         save: 'حفظ',
         cancel: 'إلغاء',
         notes: 'ملاحظات',
-        yes: 'نعم',
-        no: 'لا',
     },
     login: {
         welcome: 'أهلاً بك',
@@ -95,7 +93,6 @@ export default {
             checkin: 'الدخول',
             checkout: 'الخروج',
             hours: 'المدة',
-            uniformVerified: 'الزي الموحد',
         },
     },
     driverList: {
@@ -137,11 +134,6 @@ export default {
             notesLabel: 'معلومات / تعليمات للسائق',
             notesPlaceholder: 'أدخل أي تعليمات أو ملاحظات ذات صلة هنا...',
             saveSuccess: 'تم حفظ ملاحظات المغادرة بنجاح!',
-            uniformStatus: 'الزي الموحد',
-            verifyButton: 'التحقق من الزي',
-            verified: 'تم التحقق',
-            notVerified: 'قيد الانتظار',
-            verifySuccess: 'تم التحقق من زي السائق {{name}}!',
         },
         retourTournee: {
             title: 'تسجيلات العودة المعلقة',
@@ -205,7 +197,6 @@ export default {
             checkin: 'الدخول',
             checkout: 'الخروج',
             hoursWorked: 'ساعات العمل',
-            uniformVerified: 'الزي الموحد',
             // Daily Report Headers
             recordedAt: 'وقت التسجيل',
             closedRelais: 'نقاط التتابع المغلقة',

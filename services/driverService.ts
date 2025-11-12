@@ -1,8 +1,10 @@
 import { Driver, SubcontractorUser } from '../types';
 
 // --- ATENCIÓN: DATOS DE EJEMPLO ---
-// Esta lista se usará solo la primera vez que se inicie la aplicación
-// o si no se encuentran datos en el almacenamiento local.
+// En una aplicación real, esta información vendría de una API
+// que se conecta a la base de datos o al sitio web mencionado.
+// No es posible acceder directamente a 'https://fast-operations.mondialrelay.int/chauffeurs'
+// desde el navegador por razones de seguridad (CORS).
 const mockDrivers: Driver[] = [
   { id: 'BC12345678', name: 'Juan Pérez', company: 'Transportes Veloz', subcontractor: 'Subcontrata A', vehiclePlate: '1234-ABC', route: 'Ruta Norte' },
   { id: 'BC87654321', name: 'Ana García', company: 'Logística Rápida', subcontractor: 'Subcontrata B', vehiclePlate: '5678-DEF', route: 'Ruta Sur' },
@@ -20,32 +22,19 @@ const mockSubcontractorUsers: SubcontractorUser[] = [
   { username: 'subc', password: 'passwordc', companyName: 'Subcontrata C' },
 ];
 
-const DRIVERS_STORAGE_KEY = 'drivers';
 
 export const driverService = {
   /**
-   * Obtiene la lista de choferes.
-   * Intenta cargar desde localStorage primero. Si no hay datos,
-   * usa la lista de ejemplo y la guarda para futuras sesiones.
+   * Simula la obtención de la lista de choferes.
+   * La función devuelve una promesa que se resuelve con la lista de choferes
+   * después de un breve retraso para imitar una llamada de red.
    */
   fetchDrivers: (): Promise<Driver[]> => {
-    console.log('Obteniendo lista de choferes...');
+    console.log('Obteniendo lista de choferes (simulado)...');
     return new Promise((resolve) => {
       setTimeout(() => {
-        try {
-          const savedDrivers = localStorage.getItem(DRIVERS_STORAGE_KEY);
-          if (savedDrivers) {
-            console.log('Choferes obtenidos desde localStorage.');
-            resolve(JSON.parse(savedDrivers));
-          } else {
-            console.log('No hay choferes en localStorage. Usando datos de ejemplo y guardando.');
-            localStorage.setItem(DRIVERS_STORAGE_KEY, JSON.stringify(mockDrivers));
-            resolve(mockDrivers);
-          }
-        } catch (error) {
-          console.error('Error al obtener choferes de localStorage, usando datos de ejemplo:', error);
-          resolve(mockDrivers); // Fallback to mocks on error
-        }
+        console.log('Choferes obtenidos:', mockDrivers);
+        resolve(mockDrivers);
       }, 500); // Simula 0.5 segundos de latencia de red
     });
   },

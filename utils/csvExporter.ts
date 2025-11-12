@@ -63,8 +63,7 @@ export const exportReportToCSV = (records: ReportRow[], t: Translator, filename:
     t('export.headers.checkin'),
     t('export.headers.checkout'),
     t('export.headers.hoursWorked'),
-    t('export.headers.plate'),
-    t('export.headers.uniformVerified')
+    t('export.headers.plate')
   ];
   
   const rows = records.map(record => [
@@ -76,7 +75,6 @@ export const exportReportToCSV = (records: ReportRow[], t: Translator, filename:
     `"${record.checkoutTime}"`,
     `"${record.duration}"`,
     `"${record.vehiclePlate}"`,
-    `"${record.uniformVerified}"`,
   ]);
 
   let csvContent = "data:text/csv;charset=utf-8,"

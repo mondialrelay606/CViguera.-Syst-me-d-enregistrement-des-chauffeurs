@@ -64,7 +64,6 @@ const Reports: React.FC<ReportsProps> = ({ drivers, records }) => {
                 duration: calculateDuration(rec.checkinTime, rec.checkoutTime!),
                 vehiclePlate: rec.vehiclePlate || t('general.notAvailable'),
                 route: rec.driver.route || t('general.notAvailable'),
-                uniformVerified: rec.uniformVerified ? t('general.yes') : t('general.no'),
             })).sort((a,b) => new Date(b.checkinTime).getTime() - new Date(a.checkinTime).getTime());
     }, [records, startDate, endDate, selectedDriverId, language, t]);
 
@@ -122,7 +121,6 @@ const Reports: React.FC<ReportsProps> = ({ drivers, records }) => {
                                     <th scope="col" className="px-6 py-3">{t('reports.headers.checkin')}</th>
                                     <th scope="col" className="px-6 py-3">{t('reports.headers.checkout')}</th>
                                     <th scope="col" className="px-6 py-3">{t('reports.headers.hours')}</th>
-                                    <th scope="col" className="px-6 py-3">{t('reports.headers.uniformVerified')}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -135,7 +133,6 @@ const Reports: React.FC<ReportsProps> = ({ drivers, records }) => {
                                         <td className="px-6 py-4">{row.checkinTime}</td>
                                         <td className="px-6 py-4">{row.checkoutTime}</td>
                                         <td className="px-6 py-4 font-mono text-center">{row.duration}</td>
-                                        <td className={`px-6 py-4 text-center font-semibold ${row.uniformVerified === t('general.yes') ? 'text-green-600' : 'text-red-600'}`}>{row.uniformVerified}</td>
                                     </tr>
                                 ))}
                             </tbody>

@@ -20,7 +20,6 @@ interface AdminPanelProps {
   onUpdateDriverRoute: (driverId: string, newRoute: string) => void;
   onSaveReturnInfo: (info: Omit<ReturnInfo, 'recordedAt'>) => void;
   onSaveDepartureNotes: (attendanceRecordId: string, notes: string) => void;
-  onVerifyUniform: (attendanceRecordId: string) => void;
   onAddSubcontractorUser: (user: SubcontractorUser) => void;
   onUpdateSubcontractorPassword: (username: string, newPassword: string) => void;
 }
@@ -40,7 +39,7 @@ const ImportIcon = () => (
 );
 
 
-const AdminPanel: React.FC<AdminPanelProps> = ({ drivers, records, returnRecords, subcontractorUsers, onLogout, onFileImport, onUpdateDriverRoute, onSaveReturnInfo, onSaveDepartureNotes, onVerifyUniform, onAddSubcontractorUser, onUpdateSubcontractorPassword }) => {
+const AdminPanel: React.FC<AdminPanelProps> = ({ drivers, records, returnRecords, subcontractorUsers, onLogout, onFileImport, onUpdateDriverRoute, onSaveReturnInfo, onSaveDepartureNotes, onAddSubcontractorUser, onUpdateSubcontractorPassword }) => {
     const { t } = useTranslation();
     const [activeTab, setActiveTab] = useState<Tab>('departChauffeur');
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -71,7 +70,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ drivers, records, returnRecords
     const renderContent = () => {
         switch (activeTab) {
             case 'departChauffeur':
-                return <DepartChauffeur records={records} onSave={onSaveDepartureNotes} onVerifyUniform={onVerifyUniform} />;
+                return <DepartChauffeur records={records} onSave={onSaveDepartureNotes} />;
             case 'retourTournee':
                 return <RetourTournee records={records} onSave={onSaveReturnInfo} />;
             case 'dailyReport':

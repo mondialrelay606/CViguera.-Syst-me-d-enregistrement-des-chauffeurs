@@ -10,8 +10,6 @@ export default {
         save: 'Save',
         cancel: 'Cancel',
         notes: 'Notes',
-        yes: 'Yes',
-        no: 'No',
     },
     login: {
         welcome: 'Welcome',
@@ -95,7 +93,6 @@ export default {
             checkin: 'Check-in',
             checkout: 'Check-out',
             hours: 'Duration',
-            uniformVerified: 'Uniform Verif.',
         },
     },
     driverList: {
@@ -137,11 +134,6 @@ export default {
             notesLabel: 'Information / Instructions for the driver',
             notesPlaceholder: 'Enter any relevant instructions or notes here...',
             saveSuccess: 'Departure notes saved successfully!',
-            uniformStatus: 'Uniform',
-            verifyButton: 'Verify Uniform',
-            verified: 'Verified',
-            notVerified: 'Pending',
-            verifySuccess: 'Uniform verified for {{name}}!',
         },
         retourTournee: {
             title: 'Pending Return Registrations',
@@ -205,7 +197,6 @@ export default {
             checkin: 'Check-in',
             checkout: 'Check-out',
             hoursWorked: 'Hours Worked',
-            uniformVerified: 'Uniform Verified',
             // Daily Report Headers
             recordedAt: 'Registration Time',
             closedRelais: 'Closed Relais',

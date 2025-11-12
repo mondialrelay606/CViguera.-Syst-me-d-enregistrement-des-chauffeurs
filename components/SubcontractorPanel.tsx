@@ -35,7 +35,7 @@ const SubcontractorPanel: React.FC<SubcontractorPanelProps> = ({ subcontractor, 
     );
     
     // El componente DriverList espera una función onUpdateDriverRoute, pero las subcontratas no pueden editar.
-    // Pasamos una función vacía para satisfacer la prop ya que la edición estará deshabilitada.
+    // Pasamos una función vacía para satisfacer la prop.
     const handleUpdateRouteDummy = () => {};
 
 
@@ -46,7 +46,9 @@ const SubcontractorPanel: React.FC<SubcontractorPanelProps> = ({ subcontractor, 
             case 'reports':
                 return <Reports drivers={drivers} records={records} />;
             case 'drivers':
-                return <DriverList drivers={drivers} onUpdateDriverRoute={handleUpdateRouteDummy} canEdit={false} />;
+                // Nota: La edición de rutas podría estar deshabilitada o limitada para subcontratas.
+                // Por ahora, les permitimos editar las rutas de sus propios conductores.
+                return <DriverList drivers={drivers} onUpdateDriverRoute={handleUpdateRouteDummy} />;
             default:
                 return null;
         }
