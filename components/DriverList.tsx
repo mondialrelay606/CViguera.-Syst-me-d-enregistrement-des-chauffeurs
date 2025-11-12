@@ -16,11 +16,15 @@ const SearchIcon = () => (
 const DriverList: React.FC<DriverListProps> = ({ drivers }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
-  const filteredDrivers = drivers.filter(driver =>
-    driver.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    driver.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    driver.id.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredDrivers = drivers.filter(driver => {
+    const term = searchTerm.toLowerCase();
+    return driver.name.toLowerCase().includes(term) ||
+           driver.company.toLowerCase().includes(term) ||
+           driver.subcontractor.toLowerCase().includes(term) ||
+           driver.defaultPlate.toLowerCase().includes(term) ||
+           driver.tour.toLowerCase().includes(term) ||
+           driver.id.toLowerCase().includes(term);
+  });
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md h-full flex flex-col">
@@ -29,7 +33,7 @@ const DriverList: React.FC<DriverListProps> = ({ drivers }) => {
         <SearchIcon />
         <input
           type="text"
-          placeholder="Buscar chofer..."
+          placeholder="Buscar por cualquier campo..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full pl-10 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
@@ -47,7 +51,10 @@ const DriverList: React.FC<DriverListProps> = ({ drivers }) => {
                 <tr>
                   <th scope="col" className="px-6 py-3">Nombre</th>
                   <th scope="col" className="px-6 py-3">Empresa</th>
-                  <th scope="col" className="px-6 py-3">Código</th>
+                  <th scope="col" className="px-6 py-3">Subcontratista</th>
+                  <th scope="col" className="px-6 py-3">Matrícula por Def.</th>
+                  <th scope="col" className="px-6 py-3">Tournée</th>
+                  <th scope="col" className="px-6 py-3">Código de Barras</th>
                 </tr>
               </thead>
               <tbody>
@@ -55,6 +62,9 @@ const DriverList: React.FC<DriverListProps> = ({ drivers }) => {
                   <tr key={driver.id} className="bg-white border-b hover:bg-gray-50">
                     <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">{driver.name}</td>
                     <td className="px-6 py-4">{driver.company}</td>
+                    <td className="px-6 py-4">{driver.subcontractor}</td>
+                    <td className="px-6 py-4">{driver.defaultPlate}</td>
+                    <td className="px-6 py-4">{driver.tour}</td>
                     <td className="px-6 py-4 text-xs font-mono">{driver.id}</td>
                   </tr>
                 ))}

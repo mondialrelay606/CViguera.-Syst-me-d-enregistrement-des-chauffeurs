@@ -41,6 +41,7 @@ const CheckinLog: React.FC<CheckinLogProps> = ({ records }) => {
                   <th scope="col" className="px-6 py-3">Hora</th>
                   <th scope="col" className="px-6 py-3">Nombre</th>
                   <th scope="col" className="px-6 py-3">Empresa</th>
+                  <th scope="col" className="px-6 py-3">Tipo</th>
                 </tr>
               </thead>
               <tbody>
@@ -51,6 +52,15 @@ const CheckinLog: React.FC<CheckinLogProps> = ({ records }) => {
                     </td>
                     <td className="px-6 py-4">{record.driver.name}</td>
                     <td className="px-6 py-4">{record.driver.company}</td>
+                    <td className="px-6 py-4">
+                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                            record.type === 'Départ Chauffeur'
+                            ? 'bg-blue-100 text-blue-800'
+                            : 'bg-green-100 text-green-800'
+                        }`}>
+                            {record.type}
+                        </span>
+                    </td>
                   </tr>
                 ))}
               </tbody>

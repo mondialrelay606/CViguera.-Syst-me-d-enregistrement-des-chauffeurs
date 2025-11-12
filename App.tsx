@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Driver, CheckinRecord, ScanStatus, type ScanResult as ScanResultType } from './types';
+import { Driver, CheckinRecord, ScanStatus, type ScanResult as ScanResultType, CheckinType } from './types';
 import { driverService } from './services/driverService';
 import Clock from './components/Clock';
 import ScanResult from './components/ScanResult';
 import CheckinLog from './components/CheckinLog';
-import DriverList from './components/DriverList';
 import AdminLoginModal from './components/admin/AdminLoginModal';
 import AdminDashboard from './components/admin/AdminDashboard';
+import DriverList from './components/DriverList';
 
 // --- Constantes de la aplicación ---
 const ADMIN_PASSWORD = 'admin'; // En una app real, esto debería ser seguro.
@@ -28,10 +28,9 @@ const AdminIcon = () => (
 const App: React.FC = () => {
     const [allDrivers, setAllDrivers] = useState<Driver[]>([]);
     const [checkinLog, setCheckinLog] = useState<CheckinRecord[]>(() => {
-        // Cargar desde localStorage al iniciar
         try {
             const savedLog = localStorage.getItem(CHECKIN_LOG_STORAGE_KEY);
-            return savedLog ? JSON.parse(savedLog).map((r: any) => ({...r, timestamp: new Date(r.timestamp)})) : [];
+            return savedLog ? JSON.parse(savedLog).map((r: any) => ({...r, type: r.type || CheckinType.DEPARTURE, timestamp: new Date(r.timestamp)})) : [];
         } catch (error) {
             console.error("Error al cargar el registro de fichajes:", error);
             return [];
@@ -40,15 +39,13 @@ const App: React.FC = () => {
     const [barcode, setBarcode] = useState('');
     const [lastScanResult, setLastScanResult] = useState<ScanResultType>({ status: ScanStatus.IDLE, message: '' });
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'log' | 'drivers'>('log');
+    const [checkinType, setCheckinType] = useState<CheckinType>(CheckinType.DEPARTURE);
     
-    // --- Estado de Administración ---
     const [isAdminView, setIsAdminView] = useState(false);
     const [showAdminLogin, setShowAdminLogin] = useState(false);
     
     const barcodeInputRef = useRef<HTMLInputElement>(null);
 
-    // Cargar choferes al montar el componente
     useEffect(() => {
         const loadDrivers = async () => {
             try {
@@ -65,11 +62,11 @@ const App: React.FC = () => {
         barcodeInputRef.current?.focus();
     }, []);
 
-    // Guardar en localStorage cuando el registro cambie
     useEffect(() => {
         try {
             localStorage.setItem(CHECKIN_LOG_STORAGE_KEY, JSON.stringify(checkinLog));
-        } catch (error) {
+        } catch (error)
+ {
             console.error("Error al guardar el registro de fichajes:", error);
         }
     }, [checkinLog]);
@@ -83,10 +80,11 @@ const App: React.FC = () => {
         if (foundDriver) {
             const newRecord: CheckinRecord = {
                 driver: foundDriver,
-                timestamp: new Date()
+                timestamp: new Date(),
+                type: checkinType,
             };
             setCheckinLog(prevLog => [newRecord, ...prevLog]);
-            setLastScanResult({ status: ScanStatus.SUCCESS, message: `Bienvenido, ${foundDriver.name} de ${foundDriver.company}.` });
+            setLastScanResult({ status: ScanStatus.SUCCESS, message: `[${checkinType}] Bienvenido, ${foundDriver.name} de ${foundDriver.company}.` });
         } else {
             setLastScanResult({ status: ScanStatus.ERROR, message: `Código de barras "${barcode}" no encontrado. Verifique al chofer.` });
         }
@@ -107,8 +105,19 @@ const App: React.FC = () => {
         barcodeInputRef.current?.focus();
     };
 
+    const handleUpdateDrivers = async (newDrivers: Driver[]) => {
+        try {
+            await driverService.updateDrivers(newDrivers);
+            setAllDrivers(newDrivers);
+            alert('La lista de choferes ha sido actualizada correctamente.');
+        } catch (error) {
+            alert('Error al actualizar la lista de choferes.');
+            console.error(error);
+        }
+    };
+
     if (isAdminView) {
-        return <AdminDashboard allRecords={checkinLog} onLogout={handleLogout} />;
+        return <AdminDashboard allRecords={checkinLog} allDrivers={allDrivers} onLogout={handleLogout} onUpdateDrivers={handleUpdateDrivers} />;
     }
 
     return (
@@ -135,9 +144,24 @@ const App: React.FC = () => {
                 </header>
                 <main className="flex-grow grid grid-cols-1 lg:grid-cols-2 gap-8">
                     {/* Columna Izquierda: Escaneo y Reloj */}
-                    <div className="bg-white p-6 rounded-lg shadow-md flex flex-col justify-center space-y-8">
+                    <div className="bg-white p-6 rounded-lg shadow-md flex flex-col justify-center space-y-6">
                         <Clock />
                         <div className="w-full max-w-md mx-auto">
+                            {/* Selector de tipo de fichaje */}
+                            <div className="grid grid-cols-2 gap-4 mb-6">
+                                <button
+                                    onClick={() => setCheckinType(CheckinType.DEPARTURE)}
+                                    className={`py-4 px-4 rounded-lg text-lg font-semibold transition-all duration-200 ${checkinType === CheckinType.DEPARTURE ? 'bg-blue-600 text-white shadow-lg scale-105' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                                >
+                                    {CheckinType.DEPARTURE}
+                                </button>
+                                <button
+                                    onClick={() => setCheckinType(CheckinType.RETURN)}
+                                    className={`py-4 px-4 rounded-lg text-lg font-semibold transition-all duration-200 ${checkinType === CheckinType.RETURN ? 'bg-blue-600 text-white shadow-lg scale-105' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                                >
+                                    {CheckinType.RETURN}
+                                </button>
+                            </div>
                             <form onSubmit={handleScan}>
                                 <label htmlFor="barcode-input" className="block text-sm font-medium text-gray-700 mb-2 text-center">
                                     Escanee el código de barras del chofer
@@ -162,40 +186,15 @@ const App: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Columna Derecha: Registros y Lista */}
-                    <div className="flex flex-col min-h-[500px]">
-                        <div className="mb-4 border-b border-gray-200">
-                            <nav className="-mb-px flex space-x-4" aria-label="Tabs">
-                                <button
-                                    onClick={() => setActiveTab('log')}
-                                    className={`${activeTab === 'log' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
-                                >
-                                    Fichajes de Hoy
-                                </button>
-                                <button
-                                    onClick={() => setActiveTab('drivers')}
-                                    className={`${activeTab === 'drivers' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
-                                >
-                                    Lista de Choferes
-                                </button>
-                            </nav>
-                        </div>
-                        <div className="flex-grow">
-                            {loading ? (
-                                <div className="flex items-center justify-center h-full bg-white rounded-lg shadow-md">
-                                    <p className="text-gray-500">Cargando datos de choferes...</p>
-                                </div>
-                            ) : (
-                                <>
-                                    <div className={activeTab === 'log' ? 'block h-full' : 'hidden'}>
-                                        <CheckinLog records={checkinLog} />
-                                    </div>
-                                    <div className={activeTab === 'drivers' ? 'block h-full' : 'hidden'}>
-                                        <DriverList drivers={allDrivers} />
-                                    </div>
-                                </>
-                            )}
-                        </div>
+                    {/* Columna Derecha: Registros */}
+                     <div className="flex flex-col min-h-[500px]">
+                         {loading ? (
+                            <div className="flex items-center justify-center h-full bg-white rounded-lg shadow-md">
+                                <p className="text-gray-500">Cargando datos...</p>
+                            </div>
+                        ) : (
+                           <CheckinLog records={checkinLog} />
+                        )}
                     </div>
                 </main>
             </div>
