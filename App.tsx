@@ -5,9 +5,8 @@ import { notificationService } from './services/notificationService';
 import Login from './components/Login';
 import AdminPanel from './components/AdminPanel';
 import DriverDashboard from './components/DriverDashboard';
-import VehiclePlateEntry from './components/VehiclePlateEntry';
 
-type View = 'login' | 'driver' | 'admin' | 'plateEntry';
+type View = 'login' | 'driver' | 'admin';
 
 const App: React.FC = () => {
     const [allDrivers, setAllDrivers] = useState<Driver[]>([]);
@@ -65,7 +64,7 @@ const App: React.FC = () => {
             setLastScanResult({ status: ScanStatus.INFO, message });
             notificationService.sendNotification(`SALIDA: ${foundDriver.name} (${foundDriver.company}) a las ${now.toLocaleTimeString()}`);
         } else {
-            // Es una entrada (desde el panel de admin, sin matrícula)
+            // Es una entrada
             const newRecord: AttendanceRecord = {
                 driver: foundDriver,
                 checkinTime: now,
@@ -79,12 +78,17 @@ const App: React.FC = () => {
         }
     };
     
-    const handleDriverLogin = (id: string): boolean => {
+    const handleDriverLogin = (id: string, password?: string): boolean => {
         const foundDriver = allDrivers.find(driver => driver.id === id);
         if (!foundDriver) return false;
+
+        // Si se proporciona contraseña, se valida. Si no, se asume inicio de sesión por escaneo.
+        if (password !== undefined && foundDriver.password !== password) {
+            return false;
+        }
         
         setCurrentUser(foundDriver);
-        setView('plateEntry');
+        setView('driver');
         return true;
     };
 
@@ -103,33 +107,8 @@ const App: React.FC = () => {
                 driver.id === driverId ? { ...driver, vehiclePlate: newPlate } : driver
             )
         );
+        // En una app real, aquí se haría una llamada a la API para guardar el cambio.
         console.log(`Matrícula actualizada para ${driverId}: ${newPlate}`);
-    };
-
-    const handleLoginAndCheckIn = (plate: string) => {
-        if (!currentUser) return;
-
-        handleUpdatePlate(currentUser.id, plate);
-
-        const now = new Date();
-        if (activeDriverIds.has(currentUser.id)) {
-            console.warn("El chofer ya tiene una sesión activa. Omitiendo nueva entrada.");
-            setView('driver');
-            return;
-        }
-
-        const newRecord: AttendanceRecord = {
-            driver: currentUser,
-            checkinTime: now,
-            checkoutTime: null,
-            vehiclePlate: plate,
-        };
-        setAttendanceLog(prevLog => [newRecord, ...prevLog]);
-        setActiveDriverIds(prevIds => new Set(prevIds).add(currentUser.id));
-
-        notificationService.sendNotification(`ENTRADA: ${currentUser.name} (${currentUser.company}) con matrícula ${plate} a las ${now.toLocaleTimeString()}`);
-        
-        setView('driver');
     };
 
     if (loading && view === 'login') {
@@ -141,13 +120,6 @@ const App: React.FC = () => {
     }
     
     switch (view) {
-        case 'plateEntry':
-            return currentUser ? (
-                <VehiclePlateEntry 
-                    driver={currentUser}
-                    onPlateSubmit={handleLoginAndCheckIn}
-                />
-            ) : null;
         case 'driver':
             return currentUser ? (
                 <DriverDashboard 

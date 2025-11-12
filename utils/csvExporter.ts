@@ -6,7 +6,7 @@ export const exportActivityLogToCSV = (records: AttendanceRecord[], filename: st
     return;
   }
 
-  const headers = ['Fecha Entrada', 'Hora Entrada', 'Fecha Salida', 'Hora Salida', 'Nombre del Chofer', 'Empresa', 'Código de Barras', 'Matrícula'];
+  const headers = ['Fecha Entrada', 'Hora Entrada', 'Fecha Salida', 'Hora Salida', 'Nombre del Chofer', 'Empresa', 'Código de Barras'];
   const rows = records.map(record => [
     record.checkinTime.toLocaleDateString('es-ES'),
     record.checkinTime.toLocaleTimeString('es-ES'),
@@ -14,8 +14,7 @@ export const exportActivityLogToCSV = (records: AttendanceRecord[], filename: st
     record.checkoutTime ? record.checkoutTime.toLocaleTimeString('es-ES') : '-',
     record.driver.name,
     record.driver.company,
-    record.driver.id,
-    record.vehiclePlate || ''
+    record.driver.id
   ].map(field => `"${field}"`)); // Wrap fields in quotes
 
   let csvContent = "data:text/csv;charset=utf-8," 
@@ -39,14 +38,13 @@ export const exportReportToCSV = (records: ReportRow[], filename: string = 'repo
     return;
   }
 
-  const headers = ['Chofer', 'Empresa', 'Entrada', 'Salida', 'Horas Trabajadas', 'Matrícula'];
+  const headers = ['Chofer', 'Empresa', 'Entrada', 'Salida', 'Horas Trabajadas'];
   const rows = records.map(record => [
     `"${record.driverName}"`,
     `"${record.driverCompany}"`,
     `"${record.checkinTime}"`,
     `"${record.checkoutTime}"`,
     `"${record.duration}"`,
-    `"${record.vehiclePlate}"`,
   ]);
 
   let csvContent = "data:text/csv;charset=utf-8,"

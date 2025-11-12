@@ -58,8 +58,7 @@ const Reports: React.FC<ReportsProps> = ({ drivers, records }) => {
                 driverCompany: rec.driver.company,
                 checkinTime: rec.checkinTime.toLocaleString('es-ES'),
                 checkoutTime: rec.checkoutTime!.toLocaleString('es-ES'),
-                duration: calculateDuration(rec.checkinTime, rec.checkoutTime!),
-                vehiclePlate: rec.vehiclePlate || 'N/A',
+                duration: calculateDuration(rec.checkinTime, rec.checkoutTime!)
             })).sort((a,b) => new Date(b.checkinTime).getTime() - new Date(a.checkinTime).getTime());
     }, [records, startDate, endDate, selectedDriverId]);
 
@@ -111,7 +110,6 @@ const Reports: React.FC<ReportsProps> = ({ drivers, records }) => {
                             <thead className="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0">
                                 <tr>
                                     <th scope="col" className="px-6 py-3">Chofer</th>
-                                    <th scope="col" className="px-6 py-3">Matrícula</th>
                                     <th scope="col" className="px-6 py-3">Entrada</th>
                                     <th scope="col" className="px-6 py-3">Salida</th>
                                     <th scope="col" className="px-6 py-3">Horas Trabajadas</th>
@@ -121,7 +119,6 @@ const Reports: React.FC<ReportsProps> = ({ drivers, records }) => {
                                 {reportData.map((row, index) => (
                                     <tr key={index} className="bg-white border-b hover:bg-gray-50">
                                         <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">{row.driverName} <span className="text-gray-500">({row.driverCompany})</span></td>
-                                        <td className="px-6 py-4 font-mono text-xs">{row.vehiclePlate}</td>
                                         <td className="px-6 py-4">{row.checkinTime}</td>
                                         <td className="px-6 py-4">{row.checkoutTime}</td>
                                         <td className="px-6 py-4 font-mono text-center">{row.duration}</td>

@@ -2,6 +2,7 @@ export interface Driver {
   id: string; // Barcode value
   name: string;
   company: string;
+  password?: string; // Contraseña para el inicio de sesión
   vehiclePlate?: string; // Matrícula del vehículo
 }
 
@@ -9,7 +10,6 @@ export interface AttendanceRecord {
   driver: Driver;
   checkinTime: Date;
   checkoutTime: Date | null;
-  vehiclePlate?: string; // Matrícula usada para este fichaje
 }
 
 export enum ScanStatus {
@@ -30,5 +30,4 @@ export interface ReportRow {
     checkinTime: string;
     checkoutTime: string;
     duration: string;
-    vehiclePlate: string;
 }

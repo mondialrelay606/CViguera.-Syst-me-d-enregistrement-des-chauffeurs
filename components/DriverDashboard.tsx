@@ -51,7 +51,7 @@ const DriverDashboard: React.FC<DriverDashboardProps> = ({ driver, records, onUp
                         <h2 className="text-xl font-bold text-gray-700 mb-4">Mi Vehículo</h2>
                         <div className="space-y-3">
                             <label htmlFor="vehicle-plate" className="block text-sm font-medium text-gray-700">
-                                Matrícula (por defecto)
+                                Matrícula del Vehículo
                             </label>
                              <div className="flex items-center space-x-2">
                                 <input
@@ -88,7 +88,6 @@ const DriverDashboard: React.FC<DriverDashboardProps> = ({ driver, records, onUp
                                     <thead className="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0">
                                         <tr>
                                             <th scope="col" className="px-6 py-3">Fecha</th>
-                                            <th scope="col" className="px-6 py-3">Matrícula</th>
                                             <th scope="col" className="px-6 py-3">Hora Entrada</th>
                                             <th scope="col" className="px-6 py-3">Hora Salida</th>
                                         </tr>
@@ -99,7 +98,6 @@ const DriverDashboard: React.FC<DriverDashboardProps> = ({ driver, records, onUp
                                                 <td className="px-6 py-4 font-medium text-gray-900">
                                                     {record.checkinTime.toLocaleDateString('es-ES')}
                                                 </td>
-                                                <td className="px-6 py-4 font-mono text-xs">{record.vehiclePlate || '---'}</td>
                                                 <td className="px-6 py-4 text-green-600 font-semibold">
                                                     {record.checkinTime.toLocaleTimeString('es-ES')}
                                                 </td>

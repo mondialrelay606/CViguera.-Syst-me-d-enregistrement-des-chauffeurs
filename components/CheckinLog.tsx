@@ -40,9 +40,8 @@ const CheckinLog: React.FC<CheckinLogProps> = ({ records }) => {
                 <tr>
                   <th scope="col" className="px-6 py-3">Nombre</th>
                   <th scope="col" className="px-6 py-3">Empresa</th>
-                  <th scope="col" className="px-6 py-3">Matrícula</th>
-                  <th scope="col" className="px-6 py-3">Entrada</th>
-                  <th scope="col" className="px-6 py-3">Salida</th>
+                  <th scope="col" className="px-6 py-3">Hora Entrada</th>
+                  <th scope="col" className="px-6 py-3">Hora Salida</th>
                 </tr>
               </thead>
               <tbody>
@@ -52,7 +51,6 @@ const CheckinLog: React.FC<CheckinLogProps> = ({ records }) => {
                       {record.driver.name}
                     </td>
                     <td className="px-6 py-4">{record.driver.company}</td>
-                    <td className="px-6 py-4 font-mono text-xs">{record.vehiclePlate || 'N/A'}</td>
                     <td className="px-6 py-4">
                       {record.checkinTime.toLocaleTimeString('es-ES')}
                     </td>
