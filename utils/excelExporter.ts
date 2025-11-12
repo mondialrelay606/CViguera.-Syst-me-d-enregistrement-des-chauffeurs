@@ -8,14 +8,15 @@ declare var saveAs: any;
  * Crea una hoja de cálculo de "Tableau de Bord" con resúmenes y estadísticas.
  */
 const createDashboardSheet = (reports: ReturnReport[]): any => {
+    const today = new Date();
+    const formattedDate = today.toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' });
+
     if (reports.length === 0) {
-        const ws = XLSX.utils.aoa_to_sheet([["Aucun rapport à analyser."]]);
+        const ws = XLSX.utils.aoa_to_sheet([["Aucun rapport à analyser pour le " + formattedDate]]);
         return ws;
     }
 
     // --- 1. Procesamiento de Datos ---
-
-    // Resumen de Incidentes por Tipo
     const incidentTypes = { saturation: 0, manquantes: 0, fermes: 0 };
     reports.forEach(r => {
         incidentTypes.saturation += r.saturationLockers?.length || 0;
@@ -29,7 +30,6 @@ const createDashboardSheet = (reports: ReturnReport[]): any => {
         ["PUDO/APM Fermé", incidentTypes.fermes],
     ];
 
-    // Resumen de Incidentes por Sous-traitant
     const incidentsBySub: { [key: string]: number } = {};
     reports.forEach(r => {
         const incidentCount = (r.saturationLockers?.length || 0) + (r.livraisonsManquantes?.length || 0) + (r.pudosApmFermes?.length || 0);
@@ -42,7 +42,6 @@ const createDashboardSheet = (reports: ReturnReport[]): any => {
         ...Object.entries(incidentsBySub).sort((a, b) => b[1] - a[1])
     ];
 
-    // Resumen de Conformité Lettre de Voiture
     const totalReports = reports.length;
     const tamponOui = reports.filter(r => r.lettreDeVoiture.tamponDuRelais).length;
     const horaireOui = reports.filter(r => r.lettreDeVoiture.horaireDePassageLocker).length;
@@ -52,7 +51,6 @@ const createDashboardSheet = (reports: ReturnReport[]): any => {
         ["Horaire de Passage", horaireOui, totalReports - horaireOui, totalReports > 0 ? `${((horaireOui / totalReports) * 100).toFixed(1)}%` : 'N/A'],
     ];
 
-    // Top 5 PUDOs/Casiers problématiques
     const pudoCounts: { [key: string]: number } = {};
     reports.forEach(r => {
         (r.saturationLockers || []).forEach(item => { pudoCounts[item.lockerName] = (pudoCounts[item.lockerName] || 0) + 1; });
@@ -64,7 +62,6 @@ const createDashboardSheet = (reports: ReturnReport[]): any => {
         ...Object.entries(pudoCounts).sort((a, b) => b[1] - a[1]).slice(0, 5)
     ];
     
-    // Total Sacs/Vracs
     let totalSacs = 0, totalVracs = 0;
     reports.forEach(r => {
         (r.saturationLockers || []).forEach(i => { totalSacs += i.sacs; totalVracs += i.vracs; });
@@ -72,36 +69,68 @@ const createDashboardSheet = (reports: ReturnReport[]): any => {
     });
     const sacsVracsData = [ ["Article", "Total"], ["Sacs", totalSacs], ["Vracs", totalVracs] ];
 
+    // NOUVEAU: Top 5 Chauffeurs par incidents
+    const incidentsByDriver: { [key: string]: number } = {};
+    reports.forEach(r => {
+        const incidentCount = (r.saturationLockers?.length || 0) + (r.livraisonsManquantes?.length || 0) + (r.pudosApmFermes?.length || 0);
+        if (incidentCount > 0) {
+            incidentsByDriver[r.driverName] = (incidentsByDriver[r.driverName] || 0) + incidentCount;
+        }
+    });
+    const topDriversData = [
+        ["Chauffeur", "Nombre d'Incidents"],
+        ...Object.entries(incidentsByDriver).sort((a, b) => b[1] - a[1]).slice(0, 5)
+    ];
+
+    // NOUVEAU: Desglose de raisons de fermeture
+    const reasonCounts: { [key: string]: number } = {};
+    reports.forEach(r => {
+        (r.pudosApmFermes || []).forEach(item => {
+            reasonCounts[item.reason] = (reasonCounts[item.reason] || 0) + 1;
+        });
+    });
+    const closureReasonsData = [
+        ["Raison de Fermeture", "Nombre"],
+        ...Object.entries(reasonCounts)
+    ];
+
     // --- 2. Création de la Feuille de Calcul ---
-    const ws = XLSX.utils.aoa_to_sheet([["Tableau de Bord des Rapports de Retour"]]);
+    const ws = XLSX.utils.aoa_to_sheet([[`Tableau de Bord des Rapports de Retour - ${formattedDate}`]]);
     XLSX.utils.sheet_add_aoa(ws, [["Résumé des Incidents par Type"]], { origin: 'A3' });
     XLSX.utils.sheet_add_aoa(ws, incidentTypeData, { origin: 'A4' });
     XLSX.utils.sheet_add_aoa(ws, [["Conformité Lettre de Voiture"]], { origin: 'D3' });
     XLSX.utils.sheet_add_aoa(ws, complianceData, { origin: 'D4' });
-    XLSX.utils.sheet_add_aoa(ws, [["Total des Articles Signalés"]], { origin: 'A9' });
-    XLSX.utils.sheet_add_aoa(ws, sacsVracsData, { origin: 'A10' });
-    XLSX.utils.sheet_add_aoa(ws, [["Incidents par Sous-traitant"]], { origin: 'A15' });
-    XLSX.utils.sheet_add_aoa(ws, incidentsBySubData, { origin: 'A16' });
-    XLSX.utils.sheet_add_aoa(ws, [["Top 5 PUDOs/Casiers avec Incidents"]], { origin: 'D15' });
-    XLSX.utils.sheet_add_aoa(ws, topPudosData, { origin: 'D16' });
+    XLSX.utils.sheet_add_aoa(ws, [["Total des Articles Signalés"]], { origin: 'A10' });
+    XLSX.utils.sheet_add_aoa(ws, sacsVracsData, { origin: 'A11' });
+    XLSX.utils.sheet_add_aoa(ws, [["Incidents par Sous-traitant"]], { origin: 'A17' });
+    XLSX.utils.sheet_add_aoa(ws, incidentsBySubData, { origin: 'A18' });
+    XLSX.utils.sheet_add_aoa(ws, [["Top 5 PUDOs/Casiers avec Incidents"]], { origin: 'D10' });
+    XLSX.utils.sheet_add_aoa(ws, topPudosData, { origin: 'D11' });
+    XLSX.utils.sheet_add_aoa(ws, [["Top 5 Chauffeurs par Incidents"]], { origin: 'D18' });
+    XLSX.utils.sheet_add_aoa(ws, topDriversData, { origin: 'D19' });
+    XLSX.utils.sheet_add_aoa(ws, [["Analyse des Fermetures"]], { origin: 'A14' });
+    XLSX.utils.sheet_add_aoa(ws, closureReasonsData, { origin: 'A15' });
+
 
     // --- 3. Style et Formatage ---
     const titleStyle = { font: { sz: 18, bold: true, color: { rgb: "FF9c0058" } }, alignment: { horizontal: "center" } };
-    const sectionTitleStyle = { font: { sz: 14, bold: true, color: { rgb: "FF4F81BD" } } };
+    const sectionTitleStyle = { font: { sz: 14, bold: true, color: { rgb: "FF003366" } } };
     const headerStyle = { font: { bold: true, color: { rgb: "FF333333" } }, fill: { fgColor: { rgb: "FFDDEBF7" } }, border: { bottom: { style: "thin" } } };
     const cellBorder = { border: { top: { style: "thin", color: { rgb: "FFCCCCCC" } }, bottom: { style: "thin", color: { rgb: "FFCCCCCC" } }, left: { style: "thin", color: { rgb: "FFCCCCCC" } }, right: { style: "thin", color: { rgb: "FFCCCCCC" } } } };
 
     ws['A1'].s = titleStyle;
     ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 7 } }];
 
-    const sections = ['A3', 'D3', 'A9', 'A15', 'D15'];
+    const sections = ['A3', 'D3', 'A10', 'A17', 'D10', 'D18', 'A14'];
     sections.forEach(cell => { if(ws[cell]) ws[cell].s = sectionTitleStyle; });
     
     const applyTableStyle = (origin: string, data: any[][]) => {
+        if (!data || data.length === 0 || data[0].length === 0) return;
         const start = XLSX.utils.decode_cell(origin);
         for (let r = 0; r < data.length; r++) {
             for (let c = 0; c < data[0].length; c++) {
-                const cell = ws[XLSX.utils.encode_cell({ r: start.r + r, c: start.c + c })];
+                const cellRef = XLSX.utils.encode_cell({ r: start.r + r, c: start.c + c });
+                const cell = ws[cellRef];
                 if (cell) {
                     cell.s = r === 0 ? headerStyle : { ...cell.s, ...cellBorder };
                 }
@@ -110,13 +139,14 @@ const createDashboardSheet = (reports: ReturnReport[]): any => {
     };
     applyTableStyle('A4', incidentTypeData);
     applyTableStyle('D4', complianceData);
-    applyTableStyle('A10', sacsVracsData);
-    applyTableStyle('A16', incidentsBySubData);
-    applyTableStyle('D16', topPudosData);
+    applyTableStyle('A11', sacsVracsData);
+    applyTableStyle('A18', incidentsBySubData);
+    applyTableStyle('D11', topPudosData);
+    applyTableStyle('D19', topDriversData);
+    applyTableStyle('A15', closureReasonsData);
 
-    // Auto-ajustement des largeurs de colonnes
     const colWidths = [
-      {wch: 25}, {wch: 10}, {wch: 5}, {wch: 25}, {wch: 10}, {wch: 10}, {wch: 15}
+      {wch: 25}, {wch: 15}, {wch: 5}, {wch: 25}, {wch: 15}, {wch: 10}, {wch: 15}
     ];
     ws['!cols'] = colWidths;
     
