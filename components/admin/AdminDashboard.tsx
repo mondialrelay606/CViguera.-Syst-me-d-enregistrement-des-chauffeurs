@@ -19,6 +19,8 @@ interface AdminDashboardProps {
   onDeleteDriver: (driverId: string) => void;
   onAddReport: (newReport: ReturnReport) => void;
   onUpdateReport: (updatedReport: ReturnReport) => void;
+  onClearOldCheckins: () => void;
+  onClearAllReports: () => void;
 }
 
 const LogoutIcon = () => (
@@ -31,6 +33,13 @@ const ExportExcelIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2">
         <path strokeLinecap="round" strokeLinejoin="round" d="M3.375 21v-7.5h17.25V21H3.375Z" />
         <path strokeLinecap="round" strokeLinejoin="round" d="M3.375 13.5v-7.5A2.25 2.25 0 0 1 5.625 3.75h12.75c1.24 0 2.25 1.01 2.25 2.25v7.5" />
+    </svg>
+);
+
+const ArchiveIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2">
+        <path strokeLinecap="round" strokeLinejoin="round" d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5m5.25 4.5h3.75" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 7.5h16.5v-1.5a1.5 1.5 0 0 0-1.5-1.5h-13.5a1.5 1.5 0 0 0-1.5 1.5v1.5Z" />
     </svg>
 );
 
@@ -47,7 +56,7 @@ const EditCommentIcon = () => (
 );
 
 
-const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers, allReports, onLogout, onUpdateDrivers, onUpdateSingleDriver, onUpdateCheckinComment, onDeleteDriver, onAddReport, onUpdateReport }) => {
+const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers, allReports, onLogout, onUpdateDrivers, onUpdateSingleDriver, onUpdateCheckinComment, onDeleteDriver, onAddReport, onUpdateReport, onClearOldCheckins, onClearAllReports }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'stats' | 'drivers' | 'reports'>('stats');
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
@@ -165,14 +174,25 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers,
               <div className="xl:col-span-2 bg-white p-6 rounded-lg shadow-md flex flex-col">
                 <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
                   <h2 className="text-xl font-bold text-gray-700">Historique des Pointages ({filteredRecords.length})</h2>
-                  <button
-                    onClick={() => exportCheckinsToExcel(allRecords, `historial_fichajes_${new Date().toISOString().split('T')[0]}.xlsx`)}
-                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 flex items-center transition-colors w-full sm:w-auto"
-                    disabled={allRecords.length === 0}
-                  >
-                    <ExportExcelIcon />
-                    Exporter vers Excel
-                  </button>
+                  <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                    <button
+                        onClick={onClearOldCheckins}
+                        className="bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-opacity-50 flex items-center justify-center transition-colors"
+                        disabled={allRecords.length === 0}
+                        title="Supprimer tous les pointages des jours précédents"
+                    >
+                        <ArchiveIcon />
+                        Nettoyer Anciens
+                    </button>
+                    <button
+                        onClick={() => exportCheckinsToExcel(allRecords, `historial_fichajes_${new Date().toISOString().split('T')[0]}.xlsx`)}
+                        className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 flex items-center justify-center transition-colors"
+                        disabled={allRecords.length === 0}
+                    >
+                        <ExportExcelIcon />
+                        Exporter vers Excel
+                    </button>
+                  </div>
                 </div>
                 <div className="mb-4">
                     <input
@@ -268,6 +288,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers,
                 allDrivers={allDrivers}
                 onAddReport={onAddReport}
                 onUpdateReport={onUpdateReport}
+                onClearAllReports={onClearAllReports}
             />
         </div>
 

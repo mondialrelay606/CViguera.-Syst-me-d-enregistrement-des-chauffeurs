@@ -231,6 +231,22 @@ const App: React.FC = () => {
             )
         );
     };
+    
+    const handleClearOldCheckins = () => {
+        if (!window.confirm("Êtes-vous sûr de vouloir supprimer tous les pointages des jours précédents ? Seuls les pointages d'aujourd'hui seront conservés. Cette action est irréversible.")) {
+            return;
+        }
+        setCheckinLog(prevLog => prevLog.filter(record => isToday(record.timestamp)));
+        alert('Les anciens pointages ont été supprimés.');
+    };
+
+    const handleClearAllReports = () => {
+        if (!window.confirm("Êtes-vous sûr de vouloir supprimer TOUS les rapports de retour ? Cette action est irréversible et supprimera tout l'historique des rapports.")) {
+            return;
+        }
+        setReturnReports([]);
+        alert('Tous les rapports de retour ont été supprimés.');
+    };
 
     if (isAdminView) {
         return <AdminDashboard 
@@ -244,6 +260,8 @@ const App: React.FC = () => {
             onDeleteDriver={handleDeleteDriver}
             onAddReport={handleAddReport}
             onUpdateReport={handleUpdateReport}
+            onClearOldCheckins={handleClearOldCheckins}
+            onClearAllReports={handleClearAllReports}
         />;
     }
 
