@@ -7,22 +7,12 @@ import CheckinLog from './components/CheckinLog';
 import AdminLoginModal from './components/admin/AdminLoginModal';
 import AdminDashboard from './components/admin/AdminDashboard';
 import DriverList from './components/DriverList';
+import { isToday } from './utils/dateUtils';
 
 // --- Constantes de la aplicación ---
 const ADMIN_PASSWORD = 'admin'; // Dans une application réelle, cela devrait être sécurisé.
-const CHECKIN_LOG_STORAGE_KEY = 'checkinLog';
+const CHECKIN_LOG_STORAGE_key = 'checkinLog';
 const RETURN_REPORTS_STORAGE_KEY = 'returnReports';
-
-
-/**
- * Vérifie si une date donnée correspond à aujourd'hui.
- */
-const isToday = (someDate: Date): boolean => {
-  const today = new Date();
-  return someDate.getDate() === today.getDate() &&
-    someDate.getMonth() === today.getMonth() &&
-    someDate.getFullYear() === today.getFullYear();
-};
 
 
 const IdentificationIcon = () => (
@@ -42,11 +32,13 @@ const App: React.FC = () => {
     const [allDrivers, setAllDrivers] = useState<Driver[]>([]);
     const [checkinLog, setCheckinLog] = useState<CheckinRecord[]>(() => {
         try {
-            const savedLog = localStorage.getItem(CHECKIN_LOG_STORAGE_KEY);
-            return savedLog ? JSON.parse(savedLog).map((r: any) => ({
+            const savedLog = localStorage.getItem(CHECKIN_LOG_STORAGE_key);
+            if (!savedLog) return [];
+            const parsedLog: (Omit<CheckinRecord, 'timestamp'> & { timestamp: string })[] = JSON.parse(savedLog);
+            return parsedLog.map(r => ({
                 ...r, 
                 timestamp: new Date(r.timestamp),
-            })) : [];
+            }));
         } catch (error) {
             console.error("Erreur lors du chargement de l'historique des pointages :", error);
             return [];
@@ -90,7 +82,7 @@ const App: React.FC = () => {
 
     useEffect(() => {
         try {
-            localStorage.setItem(CHECKIN_LOG_STORAGE_KEY, JSON.stringify(checkinLog));
+            localStorage.setItem(CHECKIN_LOG_STORAGE_key, JSON.stringify(checkinLog));
         } catch (error) {
             console.error("Erreur lors de la sauvegarde de l'historique des pointages :", error);
         }

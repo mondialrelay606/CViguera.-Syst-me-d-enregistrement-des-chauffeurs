@@ -1,12 +1,18 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { CheckinRecord, DailyStats, Driver, CheckinType, ReturnReport } from '../../types';
 import { exportCheckinsToExcel } from '../../utils/excelExporter';
 import { parseDriversCSV } from '../../utils/csvParser';
-import { calculateDailyStats, getPendingReturnCheckins } from '../../utils/reporting';
+import { calculateDailyStats, getPendingReturnCheckins, calculateDashboardAnalytics } from '../../utils/reporting';
 import SummaryCard from './SummaryCard';
 import DriverList from '../DriverList';
 import ReturnReportManager from './ReturnReportManager';
 import PendingReturns from './PendingReturns';
+import IncidentsBySubcontractorChart from './charts/IncidentsBySubcontractorChart';
+import ComplianceChart from './charts/ComplianceChart';
+import TopPudosChart from './charts/TopPudosChart';
+import HourlyDistributionChart from './charts/HourlyDistributionChart';
+import TopDriversChart from './charts/TopDriversChart';
+import ClosureReasonsChart from './charts/ClosureReasonsChart';
 
 interface AdminDashboardProps {
   allRecords: CheckinRecord[];
@@ -55,15 +61,23 @@ const EditCommentIcon = () => (
     </svg>
 );
 
+const UploadIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+    </svg>
+);
+
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers, allReports, onLogout, onUpdateDrivers, onUpdateSingleDriver, onUpdateCheckinComment, onDeleteDriver, onAddReport, onUpdateReport, onClearOldCheckins, onClearAllReports }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'stats' | 'drivers' | 'reports'>('stats');
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [commentText, setCommentText] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const dailyStats = useMemo(() => calculateDailyStats(allRecords), [allRecords]);
   const pendingReturns = useMemo(() => getPendingReturnCheckins(allRecords), [allRecords]);
+  const chartData = useMemo(() => calculateDashboardAnalytics(allRecords, allReports), [allRecords, allReports]);
 
 
   const filteredRecords = useMemo(() => {
@@ -162,16 +176,38 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers,
 
       <main>
         <div className={activeTab === 'stats' ? 'block' : 'hidden'}>
-            <section className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
               <SummaryCard title="Pointages Totaux (Aujourd'hui)" value={dailyStats.totalCheckins.toString()} />
               <SummaryCard title="Chauffeurs Uniques (Aujourd'hui)" value={dailyStats.uniqueDrivers.toString()} />
+              <SummaryCard title="Chauffeurs en Attente de Retour" value={pendingReturns.length.toString()} />
             </section>
 
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-              <div className="xl:col-span-1 bg-white p-6 rounded-lg shadow-md">
-                 <PendingReturns pendingCheckins={pendingReturns} />
-              </div>
-              <div className="xl:col-span-2 bg-white p-6 rounded-lg shadow-md flex flex-col">
+             <div className="bg-white p-6 rounded-lg shadow-md mb-8">
+                 <h2 className="text-2xl font-bold text-gray-800 mb-6">Analyse Visuelle des Rapports du Jour</h2>
+                 <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
+                    <div className="lg:col-span-2 xl:col-span-1">
+                      <HourlyDistributionChart data={chartData.hourlyDistributionData} />
+                    </div>
+                    <div className="lg:col-span-2">
+                      <IncidentsBySubcontractorChart data={chartData.incidentsBySubcontractorData} />
+                    </div>
+                    <div className="lg:col-span-1">
+                       <ComplianceChart data={chartData.complianceData} />
+                    </div>
+                     <div className="lg:col-span-1">
+                        <TopPudosChart data={chartData.topPudosData} />
+                    </div>
+                     <div className="lg:col-span-1">
+                        <TopDriversChart data={chartData.topDriversData} />
+                    </div>
+                     <div className="lg:col-span-1">
+                        <ClosureReasonsChart data={chartData.closureReasonsData} />
+                    </div>
+                 </div>
+             </div>
+
+            <div className="grid grid-cols-1">
+              <div className="bg-white p-6 rounded-lg shadow-md flex flex-col">
                 <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
                   <h2 className="text-xl font-bold text-gray-700">Historique des Pointages ({filteredRecords.length})</h2>
                   <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
@@ -295,15 +331,22 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers,
         <div className={activeTab === 'drivers' ? 'block' : 'hidden'}>
             <div className="bg-white p-6 rounded-lg shadow-md mb-8">
                 <h2 className="text-xl font-bold text-gray-700 mb-4">Mettre à Jour la Liste des Chauffeurs</h2>
-                <p className="text-sm text-gray-600 mb-4">
-                    Téléchargez un fichier au format CSV pour remplacer la liste actuelle. Le fichier doit contenir les colonnes : <code className="bg-gray-200 text-sm p-1 rounded">Nom,Sous-traitant,Plaque,Tournée,Identifiant,telephone</code>.
-                </p>
-                <input
-                    type="file"
-                    accept=".csv"
-                    onChange={handleFileUpload}
-                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-fuchsia-50 file:text-[#9c0058] hover:file:bg-fuchsia-100"
-                />
+                <div className="flex flex-col sm:flex-row gap-4 items-center">
+                    <p className="text-sm text-gray-600 flex-grow">
+                        Téléchargez un fichier au format CSV pour remplacer la liste actuelle. Le fichier doit contenir les colonnes : <code className="bg-gray-200 text-sm p-1 rounded">Nom,Sous-traitant,Plaque,Tournée,Identifiant,telephone</code>.
+                    </p>
+                    <label className="cursor-pointer bg-[#9c0058] text-white px-4 py-2 rounded-lg hover:bg-[#86004c] focus:outline-none focus:ring-2 focus:ring-[#9c0058] focus:ring-opacity-50 flex items-center transition-colors">
+                        <UploadIcon />
+                        <span>Choisir un fichier</span>
+                         <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept=".csv"
+                            onChange={handleFileUpload}
+                            className="hidden"
+                        />
+                    </label>
+                </div>
             </div>
             <div className="h-[600px]">
                 <DriverList 
