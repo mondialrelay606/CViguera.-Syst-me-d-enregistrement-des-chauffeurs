@@ -6,7 +6,6 @@ import ScanResult from './components/ScanResult';
 import CheckinLog from './components/CheckinLog';
 import AdminLoginModal from './components/admin/AdminLoginModal';
 import AdminDashboard from './components/admin/AdminDashboard';
-import DriverList from './components/DriverList';
 import { isToday } from './utils/dateUtils';
 
 // --- Constantes de la aplicación ---
@@ -239,6 +238,35 @@ const App: React.FC = () => {
         setReturnReports([]);
         alert('Tous les rapports de retour ont été supprimés.');
     };
+    
+    const refreshData = async () => {
+        // Recharger les chauffeurs
+        try {
+            const drivers = await driverService.fetchDrivers();
+            setAllDrivers(drivers);
+        } catch (error) {
+            console.error("Erreur lors du rafraîchissement des chauffeurs :", error);
+        }
+
+        // Recharger l'historique des pointages
+        try {
+            const savedLog = localStorage.getItem(CHECKIN_LOG_STORAGE_key);
+            const parsedLog = savedLog ? JSON.parse(savedLog) : [];
+            setCheckinLog(parsedLog.map((r: any) => ({ ...r, timestamp: new Date(r.timestamp) })));
+        } catch (error) {
+            console.error("Erreur lors du rafraîchissement de l'historique des pointages :", error);
+            setCheckinLog([]);
+        }
+        
+        // Recharger les rapports de retour
+        try {
+            const savedReports = localStorage.getItem(RETURN_REPORTS_STORAGE_KEY);
+            setReturnReports(savedReports ? JSON.parse(savedReports) : []);
+        } catch (error) {
+            console.error("Erreur lors du rafraîchissement des rapports de retour :", error);
+            setReturnReports([]);
+        }
+    };
 
     if (isAdminView) {
         return <AdminDashboard 
@@ -254,6 +282,7 @@ const App: React.FC = () => {
             onUpdateReport={handleUpdateReport}
             onClearOldCheckins={handleClearOldCheckins}
             onClearAllReports={handleClearAllReports}
+            onRefreshData={refreshData}
         />;
     }
 
@@ -346,7 +375,7 @@ const App: React.FC = () => {
                                 <p className="text-gray-500">Chargement des données...</p>
                             </div>
                         ) : (
-                           <CheckinLog records={checkinLog} />
+                           <CheckinLog records={checkinLog.filter(record => isToday(record.timestamp))} />
                         )}
                     </div>
                 </main>

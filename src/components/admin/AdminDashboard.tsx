@@ -26,6 +26,7 @@ interface AdminDashboardProps {
   onUpdateReport: (updatedReport: ReturnReport) => void;
   onClearOldCheckins: () => void;
   onClearAllReports: () => void;
+  onRefreshData: () => Promise<void>;
 }
 
 const LogoutIcon = () => (
@@ -33,6 +34,13 @@ const LogoutIcon = () => (
         <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
     </svg>
 );
+
+const RefreshIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 11.667 0m0 0-3.182-3.182m0-11.667a8.25 8.25 0 0 0-11.667 0M6.168 12.168l-3.182 3.182" />
+    </svg>
+);
+
 
 const ExportExcelIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2">
@@ -67,11 +75,12 @@ const UploadIcon = () => (
 );
 
 
-const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers, allReports, onLogout, onUpdateDrivers, onUpdateSingleDriver, onUpdateCheckinComment, onDeleteDriver, onAddReport, onUpdateReport, onClearOldCheckins, onClearAllReports }) => {
+const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers, allReports, onLogout, onUpdateDrivers, onUpdateSingleDriver, onUpdateCheckinComment, onDeleteDriver, onAddReport, onUpdateReport, onClearOldCheckins, onClearAllReports, onRefreshData }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'stats' | 'drivers' | 'reports'>('stats');
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [commentText, setCommentText] = useState('');
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const dailyStats = useMemo(() => calculateDailyStats(allRecords), [allRecords]);
@@ -94,6 +103,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers,
         (record.departureComment && record.departureComment.toLowerCase().includes(lowercasedFilter));
     });
   }, [allRecords, searchTerm]);
+
+  const handleRefreshClick = async () => {
+      setIsRefreshing(true);
+      await onRefreshData();
+      setIsRefreshing(false);
+  };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -141,13 +156,25 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers,
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
       <header className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-800">Tableau de Bord Administration</h1>
-        <button
-          onClick={onLogout}
-          className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 flex items-center transition-colors"
-        >
-          <LogoutIcon />
-          Retour au Kiosque
-        </button>
+        <div className="flex items-center gap-2">
+            <button
+                onClick={handleRefreshClick}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 flex items-center transition-colors disabled:bg-blue-400"
+                disabled={isRefreshing}
+            >
+                <div className={isRefreshing ? 'animate-spin' : ''}>
+                   <RefreshIcon />
+                </div>
+                {isRefreshing ? 'Rafraîchissement...' : 'Rafraîchir'}
+            </button>
+            <button
+              onClick={onLogout}
+              className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 flex items-center transition-colors"
+            >
+              <LogoutIcon />
+              Retour au Kiosque
+            </button>
+        </div>
       </header>
       
       <div className="mb-4 border-b border-gray-200">

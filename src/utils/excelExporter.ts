@@ -1,9 +1,11 @@
 import { ReturnReport, CheckinRecord, CheckinType } from '../types';
-import * as XLSX from 'xlsx';
-import { saveAs } from 'file-saver';
+
+// Utilisation de 'declare' pour les bibliothèques UMD chargées via CDN/importmap afin d'éviter les problèmes de résolution de modules.
+declare var XLSX: any;
+declare var saveAs: any;
 
 /**
- * Crea una hoja de cálculo de "Tableau de Bord" con resúmenes y estadísticas.
+ * Crée une feuille de calcul de "Tableau de Bord" avec des résumés et des statistiques.
  */
 const createDashboardSheet = (reports: ReturnReport[]): any => {
     const today = new Date();
@@ -182,8 +184,8 @@ export const exportReportsToExcel = (reports: ReturnReport[], filename: string =
     const headerStyle = { fill: { fgColor: { rgb: "FF4F81BD" } }, font: { color: { rgb: "FFFFFFFF" }, bold: true, sz: 12 }, alignment: { horizontal: "center", vertical: "center" } };
     const colWidths = headers.map((_, i) => ({ wch: Math.max(headers[i].length, ...data.map(row => (row[i] ? String(row[i]).length : 0))) + 2 }));
     ws_data['!cols'] = colWidths;
-    const headerRange = ws_data['!ref'] ? XLSX.utils.decode_range(ws_data['!ref']) : null; // Added check
-    if (headerRange) { // Added check
+    const headerRange = ws_data['!ref'] ? XLSX.utils.decode_range(ws_data['!ref']) : null;
+    if (headerRange) {
         for (let C = headerRange.s.c; C <= headerRange.e.c; ++C) {
             const address = XLSX.utils.encode_cell({ r: 0, c: C });
             if (ws_data[address]) ws_data[address].s = headerStyle;
@@ -256,8 +258,8 @@ export const exportCheckinsToExcel = (records: CheckinRecord[], filename: string
 
   ws['!cols'] = colWidths;
 
-  const headerRange = ws['!ref'] ? XLSX.utils.decode_range(ws['!ref']) : null; // Added check
-  if (headerRange) { // Added check
+  const headerRange = ws['!ref'] ? XLSX.utils.decode_range(ws['!ref']) : null;
+  if (headerRange) {
       for (let C = headerRange.s.c; C <= headerRange.e.c; ++C) {
           const address = XLSX.utils.encode_cell({ r: 0, c: C });
           if (!ws[address]) continue;
