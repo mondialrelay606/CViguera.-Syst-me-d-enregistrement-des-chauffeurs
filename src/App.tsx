@@ -57,6 +57,7 @@ const App: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [checkinType, setCheckinType] = useState<CheckinType>(CheckinType.DEPARTURE);
     const [hasUniform, setHasUniform] = useState(true);
+    const [departureComment, setDepartureComment] = useState('');
     
     const [isAdminView, setIsAdminView] = useState(false);
     const [showAdminLogin, setShowAdminLogin] = useState(false);
@@ -135,6 +136,9 @@ const App: React.FC = () => {
             let successMessage = `[${checkinType}] ${foundDriver.name} pointage réussi.`;
             if (checkinType === CheckinType.DEPARTURE) {
                 newRecord.hasUniform = hasUniform;
+                if (departureComment.trim()) {
+                    newRecord.departureComment = departureComment.trim();
+                }
                 successMessage = `[${checkinType}] ${foundDriver.name} pointé (Tenue: ${hasUniform ? 'Oui' : 'Non'}).`;
             }
 
@@ -146,6 +150,7 @@ const App: React.FC = () => {
         }
         setIdentifier('');
         setHasUniform(true);
+        setDepartureComment('');
     };
 
     const handleAdminLogin = (password: string) => {
@@ -329,17 +334,32 @@ const App: React.FC = () => {
                             </div>
                             
                             {checkinType === CheckinType.DEPARTURE && (
-                                <div className="flex items-center justify-center mb-4 p-3 bg-fuchsia-50 rounded-lg">
-                                    <input
-                                        id="uniform-check"
-                                        type="checkbox"
-                                        checked={hasUniform}
-                                        onChange={(e) => setHasUniform(e.target.checked)}
-                                        className="h-5 w-5 rounded border-gray-300 text-[#9c0058] focus:ring-[#9c0058]"
-                                    />
-                                    <label htmlFor="uniform-check" className="ml-3 text-base font-medium text-gray-800">
-                                        Porte la tenue
-                                    </label>
+                                <div className="mb-4 space-y-3">
+                                    <div className="flex items-center justify-center p-3 bg-fuchsia-50 rounded-lg">
+                                        <input
+                                            id="uniform-check"
+                                            type="checkbox"
+                                            checked={hasUniform}
+                                            onChange={(e) => setHasUniform(e.target.checked)}
+                                            className="h-5 w-5 rounded border-gray-300 text-[#9c0058] focus:ring-[#9c0058]"
+                                        />
+                                        <label htmlFor="uniform-check" className="ml-3 text-base font-medium text-gray-800">
+                                            Porte la tenue
+                                        </label>
+                                    </div>
+                                    <div>
+                                        <label htmlFor="departure-comment" className="block text-sm font-medium text-gray-700 text-center mb-1">
+                                            Commentaire de départ (optionnel)
+                                        </label>
+                                        <textarea
+                                            id="departure-comment"
+                                            rows={2}
+                                            value={departureComment}
+                                            onChange={(e) => setDepartureComment(e.target.value)}
+                                            placeholder="Ex: Véhicule endommagé, retard..."
+                                            className="w-full px-3 py-2 text-base border-gray-300 rounded-lg shadow-sm focus:ring-[#9c0058] focus:border-[#9c0058]"
+                                        />
+                                    </div>
                                 </div>
                             )}
 
