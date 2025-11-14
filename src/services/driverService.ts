@@ -117,6 +117,23 @@ export const driverService = {
   },
 
   /**
+   * Ajoute un nouveau chauffeur à la liste.
+   * @param newDriver Le nouveau chauffeur à ajouter.
+   */
+  addDriver: (newDriver: Driver): Promise<void> => {
+      try {
+          const currentDrivers = loadDriversFromStorage();
+          if (currentDrivers.some(d => d.id.trim().toLowerCase() === newDriver.id.trim().toLowerCase())) {
+              return Promise.reject(new Error(`Un chauffeur avec l'identifiant "${newDriver.id}" existe déjà.`));
+          }
+          saveDriversToStorage([...currentDrivers, newDriver]);
+          return Promise.resolve();
+      } catch (error) {
+          return Promise.reject(error as Error);
+      }
+  },
+
+  /**
    * Remplace toute la liste des chauffeurs et la sauvegarde dans le stockage local.
    * @param newDrivers La nouvelle liste complète des chauffeurs.
    */

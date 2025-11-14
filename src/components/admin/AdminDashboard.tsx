@@ -19,6 +19,7 @@ interface AdminDashboardProps {
   allReports: ReturnReport[];
   onLogout: () => void;
   onUpdateDrivers: (newDrivers: Driver[]) => void;
+  onAddDriver: (newDriver: Driver) => Promise<void>;
   onUpdateSingleDriver: (driver: Driver) => void;
   onUpdateCheckinComment: (checkinId: string, comment: string) => void;
   onDeleteDriver: (driverId: string) => void;
@@ -75,7 +76,7 @@ const UploadIcon = () => (
 );
 
 
-const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers, allReports, onLogout, onUpdateDrivers, onUpdateSingleDriver, onUpdateCheckinComment, onDeleteDriver, onAddReport, onUpdateReport, onClearOldCheckins, onClearAllReports, onRefreshData }) => {
+const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers, allReports, onLogout, onUpdateDrivers, onAddDriver, onUpdateSingleDriver, onUpdateCheckinComment, onDeleteDriver, onAddReport, onUpdateReport, onClearOldCheckins, onClearAllReports, onRefreshData }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'stats' | 'drivers' | 'reports'>('stats');
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
@@ -379,6 +380,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ allRecords, allDrivers,
                   drivers={allDrivers} 
                   onUpdateDriver={onUpdateSingleDriver}
                   onDeleteDriver={onDeleteDriver}
+                  onAddDriver={onAddDriver}
                 />
             </div>
         </div>

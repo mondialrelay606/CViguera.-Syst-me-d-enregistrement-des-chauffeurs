@@ -1,5 +1,5 @@
 import React from 'react';
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import ChartTitle from './ChartTitle';
 
 interface PieData {
@@ -34,12 +34,12 @@ const CustomPieChart: React.FC<{ data: PieData[]; title: string }> = ({ data, ti
             dataKey="value"
             nameKey="name"
           >
-            {data.map((_entry, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+            {/* FIX: Use `entry` for a more stable key and to avoid unused variable issues. */}
+            {data.map((entry, index) => (
+              <Cell key={`cell-${entry.name}-${index}`} fill={COLORS[index % COLORS.length]} />
             ))}
           </Pie>
           <Tooltip />
-          <Legend /> {/* Added Legend component */}
         </PieChart>
       </ResponsiveContainer>
       )}

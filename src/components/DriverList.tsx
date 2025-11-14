@@ -5,6 +5,7 @@ interface DriverListProps {
   drivers: Driver[];
   onUpdateDriver: (driver: Driver) => void;
   onDeleteDriver: (driverId: string) => void;
+  onAddDriver: (driver: Driver) => Promise<void>;
 }
 
 const SearchIcon = () => (
@@ -39,12 +40,30 @@ const CancelIcon = () => (
     </svg>
 );
 
-type EditableDriverData = Omit<Driver, 'id'>;
+const AddIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+    </svg>
+);
 
-const DriverList: React.FC<DriverListProps> = ({ drivers, onUpdateDriver, onDeleteDriver }) => {
+
+type EditableDriverData = Omit<Driver, 'id'>;
+const initialNewDriverState = {
+    id: '',
+    name: '',
+    subcontractor: '',
+    plate: '',
+    tour: '',
+    telephone: ''
+};
+
+const DriverList: React.FC<DriverListProps> = ({ drivers, onUpdateDriver, onDeleteDriver, onAddDriver }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [editingDriverId, setEditingDriverId] = useState<string | null>(null);
   const [editedData, setEditedData] = useState<Partial<EditableDriverData>>({});
+  const [isAdding, setIsAdding] = useState(false);
+  const [newDriver, setNewDriver] = useState(initialNewDriverState);
+
 
   const handleEditClick = (driver: Driver) => {
     setEditingDriverId(driver.id);
@@ -81,12 +100,44 @@ const DriverList: React.FC<DriverListProps> = ({ drivers, onUpdateDriver, onDele
       setEditedData(prev => ({ ...prev, [name]: value }));
   };
 
+   const handleNewDriverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const { name, value } = e.target;
+      setNewDriver(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleAddSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!newDriver.id.trim() || !newDriver.name.trim() || !newDriver.subcontractor.trim()) {
+          alert("Les champs 'Identifiant', 'Nom' et 'Sous-traitant' sont obligatoires.");
+          return;
+      }
+      try {
+        await onAddDriver({
+            id: newDriver.id.trim(),
+            name: newDriver.name.trim(),
+            subcontractor: newDriver.subcontractor.trim(),
+            plate: newDriver.plate.trim(),
+            tour: newDriver.tour.trim(),
+            telephone: newDriver.telephone.trim(),
+        });
+        setNewDriver(initialNewDriverState);
+        setIsAdding(false);
+      } catch (error) {
+          console.error("Échec de l'ajout du chauffeur. Le formulaire reste ouvert pour correction.", error);
+      }
+  };
+
+  const handleCancelAdd = () => {
+      setIsAdding(false);
+      setNewDriver(initialNewDriverState);
+  };
+
+  // FIX: Refactored filtering to be more robust and avoid Object.values.
   const filteredDrivers = drivers.filter(driver => {
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
-    return Object.values(driver).some(value => 
-        String(value).toLowerCase().includes(term)
-    );
+    const searchableString = Object.values(driver).join(' ').toLowerCase();
+    return searchableString.includes(term);
   });
 
   const renderEditableCell = (field: keyof EditableDriverData, value: string) => (
@@ -97,6 +148,21 @@ const DriverList: React.FC<DriverListProps> = ({ drivers, onUpdateDriver, onDele
       onChange={handleDataChange}
       className="w-full p-1 border border-fuchsia-300 rounded-md bg-white focus:ring-1 focus:ring-[#9c0058] focus:border-[#9c0058]"
     />
+  );
+  
+  const renderInput = (name: keyof typeof newDriver, placeholder: string, required: boolean = false) => (
+      <div>
+          <label htmlFor={`new-${name}`} className="sr-only">{placeholder}</label>
+          <input
+              id={`new-${name}`}
+              name={name}
+              value={newDriver[name]}
+              onChange={handleNewDriverChange}
+              placeholder={placeholder + (required ? ' *' : '')}
+              required={required}
+              className="w-full p-2 border border-gray-300 rounded-md bg-white focus:ring-1 focus:ring-[#9c0058] focus:border-[#9c0058]"
+          />
+      </div>
   );
 
   return (
@@ -112,6 +178,48 @@ const DriverList: React.FC<DriverListProps> = ({ drivers, onUpdateDriver, onDele
           className="w-full pl-10 p-2 border border-gray-300 rounded-lg focus:ring-[#9c0058] focus:border-[#9c0058]"
         />
       </div>
+
+      <div className="mb-4">
+        {!isAdding ? (
+            <button
+                onClick={() => setIsAdding(true)}
+                className="w-full sm:w-auto bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 flex items-center justify-center transition-colors"
+            >
+                <AddIcon />
+                Ajouter un nouveau chauffeur
+            </button>
+        ) : (
+            <div className="p-4 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
+                <h3 className="text-lg font-semibold text-gray-800 mb-3">Nouveau Chauffeur</h3>
+                <form onSubmit={handleAddSubmit}>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                        {renderInput('name', 'Nom', true)}
+                        {renderInput('subcontractor', 'Sous-traitant', true)}
+                        {renderInput('id', 'Identifiant', true)}
+                        {renderInput('plate', 'Plaque')}
+                        {renderInput('tour', 'Tournée')}
+                        {renderInput('telephone', 'Téléphone')}
+                    </div>
+                    <div className="flex justify-end gap-3 mt-4">
+                        <button
+                            type="button"
+                            onClick={handleCancelAdd}
+                            className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
+                        >
+                            Annuler
+                        </button>
+                        <button
+                            type="submit"
+                            className="bg-[#9c0058] text-white px-4 py-2 rounded-lg hover:bg-[#86004c] transition-colors"
+                        >
+                            Enregistrer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        )}
+      </div>
+
       <div className="flex-grow overflow-y-auto">
         {filteredDrivers.length === 0 ? (
           <div className="flex items-center justify-center h-full text-gray-500">
@@ -132,10 +240,10 @@ const DriverList: React.FC<DriverListProps> = ({ drivers, onUpdateDriver, onDele
                 </tr>
               </thead>
               <tbody>
-                {filteredDrivers.map((driver) => {
+                {filteredDrivers.map((driver, index) => {
                   const isEditing = editingDriverId === driver.id;
                   return (
-                    <tr key={driver.id} className={`bg-white border-b hover:bg-gray-50 ${isEditing ? 'bg-fuchsia-50' : ''}`}>
+                    <tr key={`${driver.id}-${index}`} className={`bg-white border-b hover:bg-gray-50 ${isEditing ? 'bg-fuchsia-50' : ''}`}>
                       <td className="px-6 py-2">{isEditing ? renderEditableCell('name', editedData.name || '') : driver.name}</td>
                       <td className="px-6 py-2">{isEditing ? renderEditableCell('subcontractor', editedData.subcontractor || '') : driver.subcontractor}</td>
                       <td className="px-6 py-2">{isEditing ? renderEditableCell('plate', editedData.plate || '') : driver.plate}</td>

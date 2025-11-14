@@ -14,7 +14,8 @@ const PendingReturns: React.FC<PendingReturnsProps> = ({ pendingCheckins }) => {
             <div className="flex-grow overflow-y-auto">
                 {pendingCheckins.length === 0 ? (
                     <div className="flex items-center justify-center h-full bg-green-50 text-green-700 rounded-lg p-4">
-                        <p>Todos los chauffeurs partis aujourd'hui sont revenus.</p>
+                        {/* FIX: Corrected mixed-language string from Spanish "Todos los" to French "Tous les" */}
+                        <p>Tous les chauffeurs partis aujourd'hui sont revenus.</p>
                     </div>
                 ) : (
                     <table className="w-full text-sm text-left text-gray-500">

@@ -4,12 +4,10 @@ import { driverService } from './services/driverService';
 import Clock from './components/Clock';
 import ScanResult from './components/ScanResult';
 import CheckinLog from './components/CheckinLog';
-import AdminLoginModal from './components/admin/AdminLoginModal';
 import AdminDashboard from './components/admin/AdminDashboard';
 import { isToday } from './utils/dateUtils';
 
 // --- Constantes de la aplicación ---
-const ADMIN_PASSWORD = 'admin'; // Dans une application réelle, cela devrait être sécurisé.
 const CHECKIN_LOG_STORAGE_key = 'checkinLog';
 const RETURN_REPORTS_STORAGE_KEY = 'returnReports';
 
@@ -60,7 +58,6 @@ const App: React.FC = () => {
     const [departureComment, setDepartureComment] = useState('');
     
     const [isAdminView, setIsAdminView] = useState(false);
-    const [showAdminLogin, setShowAdminLogin] = useState(false);
     
     const identifierInputRef = useRef<HTMLInputElement>(null);
 
@@ -152,15 +149,6 @@ const App: React.FC = () => {
         setHasUniform(true);
         setDepartureComment('');
     };
-
-    const handleAdminLogin = (password: string) => {
-        if (password === ADMIN_PASSWORD) {
-            setIsAdminView(true);
-            setShowAdminLogin(false);
-        } else {
-            alert('Mot de passe incorrect.');
-        }
-    };
     
     const handleLogout = () => {
         setIsAdminView(false);
@@ -175,6 +163,21 @@ const App: React.FC = () => {
         } catch (error) {
             alert('Erreur lors de la mise à jour de la liste des chauffeurs.');
             console.error(error);
+        }
+    };
+
+    const handleAddDriver = async (newDriver: Driver) => {
+        try {
+            await driverService.addDriver(newDriver);
+            setAllDrivers(prevDrivers => 
+                [...prevDrivers, newDriver].sort((a, b) => a.name.localeCompare(b.name))
+            );
+            alert('Nouveau chauffeur ajouté avec succès.');
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Une erreur inconnue est survenue.';
+            alert(`Erreur lors de l'ajout du chauffeur : ${errorMessage}`);
+            console.error(error);
+            throw error; // Re-throw to allow caller to handle UI state
         }
     };
 
@@ -280,6 +283,7 @@ const App: React.FC = () => {
             allReports={returnReports}
             onLogout={handleLogout} 
             onUpdateDrivers={handleUpdateDrivers}
+            onAddDriver={handleAddDriver}
             onUpdateSingleDriver={handleUpdateSingleDriver}
             onUpdateCheckinComment={handleUpdateCheckinComment}
             onDeleteDriver={handleDeleteDriver}
@@ -293,18 +297,13 @@ const App: React.FC = () => {
 
     return (
         <>
-            <AdminLoginModal
-                isOpen={showAdminLogin}
-                onClose={() => setShowAdminLogin(false)}
-                onLogin={handleAdminLogin}
-            />
             <div className="min-h-screen p-4 sm:p-6 lg:p-8 flex flex-col">
                 <header className="mb-6">
                     <div className="relative text-center">
                         <h1 className="text-4xl font-bold text-[#9c0058]">Système de Pointage des Chauffeurs</h1>
                         <p className="text-lg text-gray-600">Enregistrement des arrivées par Identifiant</p>
                         <button
-                            onClick={() => setShowAdminLogin(true)}
+                            onClick={() => setIsAdminView(true)}
                             className="absolute top-0 right-0 flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-all"
                             aria-label="Accès administrateur"
                         >
