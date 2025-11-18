@@ -38,7 +38,6 @@ const TopPudosChart: React.FC<TopPudosChartProps> = ({ data }) => {
             />
             <Tooltip />
             <Bar dataKey="count" name="Incidents">
-                {/* FIX: Use `entry` for a more stable key and to avoid unused variable issues. */}
                 {data.map((entry, index) => (
                     <Cell key={`cell-${entry.name}-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}

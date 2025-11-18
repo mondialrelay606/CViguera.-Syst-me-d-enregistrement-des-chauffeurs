@@ -117,23 +117,6 @@ export const driverService = {
   },
 
   /**
-   * Ajoute un nouveau chauffeur à la liste.
-   * @param newDriver Le nouveau chauffeur à ajouter.
-   */
-  addDriver: (newDriver: Driver): Promise<void> => {
-      try {
-          const currentDrivers = loadDriversFromStorage();
-          if (currentDrivers.some(d => d.id.trim().toLowerCase() === newDriver.id.trim().toLowerCase())) {
-              return Promise.reject(new Error(`Un chauffeur avec l'identifiant "${newDriver.id}" existe déjà.`));
-          }
-          saveDriversToStorage([...currentDrivers, newDriver]);
-          return Promise.resolve();
-      } catch (error) {
-          return Promise.reject(error as Error);
-      }
-  },
-
-  /**
    * Remplace toute la liste des chauffeurs et la sauvegarde dans le stockage local.
    * @param newDrivers La nouvelle liste complète des chauffeurs.
    */
@@ -147,15 +130,22 @@ export const driverService = {
   },
 
   /**
-   * Met à jour les données d'un seul chauffeur.
-   * @param updatedDriver L'objet chauffeur avec les informations mises à jour.
+   * Met à jour les données d'un seul chauffeur, y compris potentiellement son ID.
+   * @param originalDriverId L'ID original du chauffeur à modifier.
+   * @param updatedDriver L'objet chauffeur avec les informations mises à jour (incluant le nouvel ID si modifié).
    */
-  updateSingleDriver: (updatedDriver: Driver): Promise<void> => {
+  updateDriver: (originalDriverId: string, updatedDriver: Driver): Promise<void> => {
       try {
-          const driverIndex = drivers.findIndex(d => d.id === updatedDriver.id);
+          const driverIndex = drivers.findIndex(d => d.id === originalDriverId);
           if (driverIndex === -1) {
               return Promise.reject(new Error("Chauffeur à mettre à jour non trouvé."));
           }
+
+          // Vérifier si le nouvel ID existe déjà pour un AUTRE chauffeur
+          if (originalDriverId !== updatedDriver.id && drivers.some(d => d.id === updatedDriver.id && d.id !== originalDriverId)) {
+              return Promise.reject(new Error(`L'identifiant "${updatedDriver.id}" est déjà utilisé par un autre chauffeur.`));
+          }
+
           const newDrivers = [...drivers];
           newDrivers[driverIndex] = updatedDriver;
           saveDriversToStorage(newDrivers);
@@ -173,6 +163,23 @@ export const driverService = {
       try {
           const newDrivers = drivers.filter(d => d.id !== driverId);
           saveDriversToStorage(newDrivers);
+          return Promise.resolve();
+      } catch (error) {
+          return Promise.reject(error);
+      }
+  },
+
+  /**
+   * Ajoute un nouveau chauffeur à la liste.
+   * @param newDriver L'objet Driver à ajouter.
+   */
+  addDriver: (newDriver: Driver): Promise<void> => {
+      try {
+          if (drivers.some(d => d.id === newDriver.id)) {
+              return Promise.reject(new Error(`L'identifiant "${newDriver.id}" existe déjà. Veuillez en choisir un autre.`));
+          }
+          const driversWithNew = [...drivers, newDriver];
+          saveDriversToStorage(driversWithNew);
           return Promise.resolve();
       } catch (error) {
           return Promise.reject(error);

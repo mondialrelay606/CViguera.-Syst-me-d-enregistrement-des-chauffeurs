@@ -55,7 +55,6 @@ const App: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [checkinType, setCheckinType] = useState<CheckinType>(CheckinType.DEPARTURE);
     const [hasUniform, setHasUniform] = useState(true);
-    const [departureComment, setDepartureComment] = useState('');
     
     const [isAdminView, setIsAdminView] = useState(false);
     
@@ -133,9 +132,6 @@ const App: React.FC = () => {
             let successMessage = `[${checkinType}] ${foundDriver.name} pointage réussi.`;
             if (checkinType === CheckinType.DEPARTURE) {
                 newRecord.hasUniform = hasUniform;
-                if (departureComment.trim()) {
-                    newRecord.departureComment = departureComment.trim();
-                }
                 successMessage = `[${checkinType}] ${foundDriver.name} pointé (Tenue: ${hasUniform ? 'Oui' : 'Non'}).`;
             }
 
@@ -147,7 +143,6 @@ const App: React.FC = () => {
         }
         setIdentifier('');
         setHasUniform(true);
-        setDepartureComment('');
     };
     
     const handleLogout = () => {
@@ -166,29 +161,15 @@ const App: React.FC = () => {
         }
     };
 
-    const handleAddDriver = async (newDriver: Driver) => {
+    const handleUpdateSingleDriver = async (originalDriverId: string, updatedDriver: Driver) => {
         try {
-            await driverService.addDriver(newDriver);
+            await driverService.updateDriver(originalDriverId, updatedDriver);
             setAllDrivers(prevDrivers => 
-                [...prevDrivers, newDriver].sort((a, b) => a.name.localeCompare(b.name))
+                prevDrivers.map(d => d.id === originalDriverId ? updatedDriver : d)
             );
-            alert('Nouveau chauffeur ajouté avec succès.');
+            alert('Chauffeur mis à jour avec succès.');
         } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Une erreur inconnue est survenue.';
-            alert(`Erreur lors de l'ajout du chauffeur : ${errorMessage}`);
-            console.error(error);
-            throw error; // Re-throw to allow caller to handle UI state
-        }
-    };
-
-    const handleUpdateSingleDriver = async (updatedDriver: Driver) => {
-        try {
-            await driverService.updateSingleDriver(updatedDriver);
-            setAllDrivers(prevDrivers => 
-                prevDrivers.map(d => d.id === updatedDriver.id ? updatedDriver : d)
-            );
-        } catch (error) {
-            alert('Erreur lors de la mise à jour du chauffeur.');
+            alert(`Erreur lors de la mise à jour du chauffeur: ${error instanceof Error ? error.message : String(error)}`);
             console.error(error);
         }
     };
@@ -219,6 +200,18 @@ const App: React.FC = () => {
         }
     };
     
+    const handleAddDriver = async (newDriver: Driver) => {
+        try {
+            await driverService.addDriver(newDriver);
+            setAllDrivers(prevDrivers => [...prevDrivers, newDriver]);
+            alert('Chauffeur ajouté avec succès.');
+        } catch (error) {
+            alert(`Erreur lors de l'ajout du chauffeur: ${error instanceof Error ? error.message : String(error)}`);
+            console.error(error);
+            throw error; // Re-throw to keep the form open if there's an error
+        }
+    };
+
     const handleAddReport = (newReport: ReturnReport) => {
         setReturnReports(prevReports => [newReport, ...prevReports]);
     };
@@ -246,35 +239,6 @@ const App: React.FC = () => {
         setReturnReports([]);
         alert('Tous les rapports de retour ont été supprimés.');
     };
-    
-    const refreshData = async () => {
-        // Recharger les chauffeurs
-        try {
-            const drivers = await driverService.fetchDrivers();
-            setAllDrivers(drivers);
-        } catch (error) {
-            console.error("Erreur lors du rafraîchissement des chauffeurs :", error);
-        }
-
-        // Recharger l'historique des pointages
-        try {
-            const savedLog = localStorage.getItem(CHECKIN_LOG_STORAGE_key);
-            const parsedLog = savedLog ? JSON.parse(savedLog) : [];
-            setCheckinLog(parsedLog.map((r: any) => ({ ...r, timestamp: new Date(r.timestamp) })));
-        } catch (error) {
-            console.error("Erreur lors du rafraîchissement de l'historique des pointages :", error);
-            setCheckinLog([]);
-        }
-        
-        // Recharger les rapports de retour
-        try {
-            const savedReports = localStorage.getItem(RETURN_REPORTS_STORAGE_KEY);
-            setReturnReports(savedReports ? JSON.parse(savedReports) : []);
-        } catch (error) {
-            console.error("Erreur lors du rafraîchissement des rapports de retour :", error);
-            setReturnReports([]);
-        }
-    };
 
     if (isAdminView) {
         return <AdminDashboard 
@@ -283,15 +247,14 @@ const App: React.FC = () => {
             allReports={returnReports}
             onLogout={handleLogout} 
             onUpdateDrivers={handleUpdateDrivers}
-            onAddDriver={handleAddDriver}
             onUpdateSingleDriver={handleUpdateSingleDriver}
             onUpdateCheckinComment={handleUpdateCheckinComment}
             onDeleteDriver={handleDeleteDriver}
+            onAddDriver={handleAddDriver}
             onAddReport={handleAddReport}
             onUpdateReport={handleUpdateReport}
             onClearOldCheckins={handleClearOldCheckins}
             onClearAllReports={handleClearAllReports}
-            onRefreshData={refreshData}
         />;
     }
 
@@ -333,32 +296,17 @@ const App: React.FC = () => {
                             </div>
                             
                             {checkinType === CheckinType.DEPARTURE && (
-                                <div className="mb-4 space-y-3">
-                                    <div className="flex items-center justify-center p-3 bg-fuchsia-50 rounded-lg">
-                                        <input
-                                            id="uniform-check"
-                                            type="checkbox"
-                                            checked={hasUniform}
-                                            onChange={(e) => setHasUniform(e.target.checked)}
-                                            className="h-5 w-5 rounded border-gray-300 text-[#9c0058] focus:ring-[#9c0058]"
-                                        />
-                                        <label htmlFor="uniform-check" className="ml-3 text-base font-medium text-gray-800">
-                                            Porte la tenue
-                                        </label>
-                                    </div>
-                                    <div>
-                                        <label htmlFor="departure-comment" className="block text-sm font-medium text-gray-700 text-center mb-1">
-                                            Commentaire de départ (optionnel)
-                                        </label>
-                                        <textarea
-                                            id="departure-comment"
-                                            rows={2}
-                                            value={departureComment}
-                                            onChange={(e) => setDepartureComment(e.target.value)}
-                                            placeholder="Ex: Véhicule endommagé, retard..."
-                                            className="w-full px-3 py-2 text-base border-gray-300 rounded-lg shadow-sm focus:ring-[#9c0058] focus:border-[#9c0058]"
-                                        />
-                                    </div>
+                                <div className="flex items-center justify-center mb-4 p-3 bg-fuchsia-50 rounded-lg">
+                                    <input
+                                        id="uniform-check"
+                                        type="checkbox"
+                                        checked={hasUniform}
+                                        onChange={(e) => setHasUniform(e.target.checked)}
+                                        className="h-5 w-5 rounded border-gray-300 text-[#9c0058] focus:ring-[#9c0058]"
+                                    />
+                                    <label htmlFor="uniform-check" className="ml-3 text-base font-medium text-gray-800">
+                                        Porte la tenue
+                                    </label>
                                 </div>
                             )}
 
@@ -394,7 +342,7 @@ const App: React.FC = () => {
                                 <p className="text-gray-500">Chargement des données...</p>
                             </div>
                         ) : (
-                           <CheckinLog records={checkinLog.filter(record => isToday(record.timestamp))} />
+                           <CheckinLog records={checkinLog} />
                         )}
                     </div>
                 </main>

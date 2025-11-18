@@ -29,15 +29,11 @@ const ExportExcelIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2">
         <path strokeLinecap="round" strokeLinejoin="round" d="M3.375 21v-7.5h17.25V21H3.375Z" />
         <path strokeLinecap="round" strokeLinejoin="round" d="M3.375 13.5v-7.5A2.25 2.25 0 0 1 5.625 3.75h12.75c1.24 0 2.25 1.01 2.25 2.25v7.5" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 17.25v.008h.008V17.25H9Z" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 17.25v.008h.008V17.25H12Z" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15 17.25v.008h.008V17.25H15Z" />
     </svg>
 );
 
 const TrashIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2">
-        {/* FIX: Corrected typo in SVG path data from 4.8108 to 48.108 */}
         <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.134-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.067-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
     </svg>
 );
@@ -49,6 +45,7 @@ const ReturnReportManager: React.FC<ReturnReportManagerProps> = ({ allRecords, a
     const [checkinForNewReport, setCheckinForNewReport] = useState<CheckinRecord | null>(null);
     const [departureCommentForNewReport, setDepartureCommentForNewReport] = useState<string | undefined>(undefined);
     const [filterSubcontractor, setFilterSubcontractor] = useState<string>('');
+    const [filterTour, setFilterTour] = useState('');
 
     const todayReturnCheckins = useMemo(() => {
         return allRecords
@@ -74,9 +71,12 @@ const ReturnReportManager: React.FC<ReturnReportManagerProps> = ({ allRecords, a
             if (filterSubcontractor && c.driver.subcontractor !== filterSubcontractor) {
                 return false;
             }
+            if (filterTour.trim() && !c.driver.tour.toLowerCase().includes(filterTour.trim().toLowerCase())) {
+                return false;
+            }
             return true;
         });
-    }, [todayReturnCheckins, filterSubcontractor]);
+    }, [todayReturnCheckins, filterSubcontractor, filterTour]);
     
     const handleExport = () => {
         const reportsToExport = allReports.filter(report => {
@@ -184,19 +184,32 @@ const ReturnReportManager: React.FC<ReturnReportManagerProps> = ({ allRecords, a
                     </div>
                 </div>
 
-                <div className="mb-4">
-                    <label htmlFor="subcontractor-filter" className="block text-sm font-medium text-gray-700">Filtrer par Sous-traitant :</label>
-                    <select
-                        id="subcontractor-filter"
-                        value={filterSubcontractor}
-                        onChange={(e) => setFilterSubcontractor(e.target.value)}
-                        className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-                    >
-                        <option value="">Tous</option>
-                        {uniqueSubcontractors.map(sub => (
-                            <option key={sub} value={sub}>{sub}</option>
-                        ))}
-                    </select>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label htmlFor="subcontractor-filter" className="block text-sm font-medium text-gray-700">Filtrer par Sous-traitant :</label>
+                        <select
+                            id="subcontractor-filter"
+                            value={filterSubcontractor}
+                            onChange={(e) => setFilterSubcontractor(e.target.value)}
+                            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-[#9c0058] focus:border-[#9c0058] sm:text-sm rounded-md"
+                        >
+                            <option value="">Tous</option>
+                            {uniqueSubcontractors.map(sub => (
+                                <option key={sub} value={sub}>{sub}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div>
+                        <label htmlFor="tour-filter" className="block text-sm font-medium text-gray-700">Filtrer par Tournée :</label>
+                        <input
+                            id="tour-filter"
+                            type="text"
+                            value={filterTour}
+                            onChange={(e) => setFilterTour(e.target.value)}
+                            placeholder="Entrer une tournée..."
+                            className="mt-1 block w-full px-3 py-2 text-base border-gray-300 focus:outline-none focus:ring-[#9c0058] focus:border-[#9c0058] sm:text-sm rounded-md"
+                        />
+                    </div>
                 </div>
                 
                  <div className="overflow-y-auto h-[500px]">
@@ -206,6 +219,7 @@ const ReturnReportManager: React.FC<ReturnReportManagerProps> = ({ allRecords, a
                                  <th scope="col" className="px-6 py-3">Heure Retour</th>
                                  <th scope="col" className="px-6 py-3">Chauffeur</th>
                                  <th scope="col" className="px-6 py-3">Sous-traitant</th>
+                                 <th scope="col" className="px-6 py-3">Tournée</th>
                                  <th scope="col" className="px-6 py-3">État du Rapport</th>
                                  <th scope="col" className="px-6 py-3">Résumé Incidents</th>
                                  <th scope="col" className="px-6 py-3 text-center">Actions</th>
@@ -222,6 +236,7 @@ const ReturnReportManager: React.FC<ReturnReportManagerProps> = ({ allRecords, a
                                     <td className="px-6 py-4 font-medium text-gray-900">{checkin.timestamp.toLocaleTimeString('fr-FR')}</td>
                                     <td className="px-6 py-4">{checkin.driver.name}</td>
                                     <td className="px-6 py-4">{checkin.driver.subcontractor}</td>
+                                    <td className="px-6 py-4">{checkin.driver.tour || <span className="text-gray-400">N/A</span>}</td>
                                     <td className="px-6 py-4">
                                         <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
                                             hasReport ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
@@ -253,7 +268,7 @@ const ReturnReportManager: React.FC<ReturnReportManagerProps> = ({ allRecords, a
                                 );
                             }) : (
                                 <tr>
-                                    <td colSpan={6} className="text-center py-10 text-gray-500">
+                                    <td colSpan={7} className="text-center py-10 text-gray-500">
                                         Aucun pointage de retour pour le filtre actuel.
                                     </td>
                                 </tr>

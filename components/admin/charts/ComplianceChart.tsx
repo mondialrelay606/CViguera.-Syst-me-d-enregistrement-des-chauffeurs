@@ -35,7 +35,8 @@ const CustomPieChart: React.FC<{ data: PieData[]; title: string }> = ({ data, ti
             nameKey="name"
           >
             {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              // FIX: Use a more stable and unique key for list items.
+              <Cell key={`cell-${entry.name}-${index}`} fill={COLORS[index % COLORS.length]} />
             ))}
           </Pie>
           <Tooltip />

@@ -34,7 +34,6 @@ const CustomPieChart: React.FC<{ data: PieData[]; title: string }> = ({ data, ti
             dataKey="value"
             nameKey="name"
           >
-            {/* FIX: Use `entry` for a more stable key and to avoid unused variable issues. */}
             {data.map((entry, index) => (
               <Cell key={`cell-${entry.name}-${index}`} fill={COLORS[index % COLORS.length]} />
             ))}

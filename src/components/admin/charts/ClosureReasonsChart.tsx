@@ -33,7 +33,6 @@ const ClosureReasonsChart: React.FC<ClosureReasonsChartProps> = ({ data }) => {
               nameKey="name"
               label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
             >
-              {/* FIX: Use item name in key for better stability, consistent with other charts. */}
               {data.map((entry, index) => (
                 <Cell key={`cell-${entry.name}-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}

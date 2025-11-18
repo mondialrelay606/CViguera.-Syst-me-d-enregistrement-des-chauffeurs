@@ -38,7 +38,8 @@ const TopDriversChart: React.FC<TopDriversChartProps> = ({ data }) => {
             <Tooltip />
             <Bar dataKey="count" name="Incidents">
                {data.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    // FIX: Use a more stable and unique key for list items.
+                    <Cell key={`cell-${entry.name}-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
             </Bar>
           </BarChart>
